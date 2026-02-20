@@ -478,9 +478,10 @@
                 <div class="order-body" id="orderBody">
                     <p class="order-section-value empty">Start building your spec...</p>
                 </div>
-                <div class="order-actions">
+                <div class="order-actions" style="flex-wrap:wrap">
                     <button class="btn btn-secondary" onclick="goToStep(6)" style="font-size:0.8rem">Review Order</button>
-                    <button class="btn btn-primary" onclick="exportText()" style="font-size:0.8rem">Export</button>
+                    <button class="btn btn-primary" onclick="exportMarkdown()" style="font-size:0.8rem;background:var(--xps-purple)">Export Markdown</button>
+                    <button class="btn btn-primary" onclick="exportText()" style="font-size:0.8rem">Export Text</button>
                 </div>
             </div>
         </div>
@@ -1283,6 +1284,7 @@ function renderStep6(el) {
         </div>
 
         <div class="export-bar">
+            <button class="btn btn-primary" onclick="exportMarkdown()" style="background:var(--xps-purple)">&#9998; Export as Markdown</button>
             <button class="btn btn-primary" onclick="exportText()">&#128196; Export as Text</button>
             <button class="btn btn-primary" onclick="exportPDF()">&#128195; Export as PDF</button>
             <button class="btn btn-secondary" onclick="window.print()">&#128424; Print</button>
@@ -1536,6 +1538,307 @@ function stepNav(step) {
 // ═══════════════════════════════════════════════════════════════
 // EXPORT
 // ═══════════════════════════════════════════════════════════════
+
+// ── Markdown Export ──
+// Generates a filled-in spec in the same structure as DtoR_Spec_Template.md.
+// Upload this to your Azure DevOps repo and edit directly from there.
+function exportMarkdown() {
+    const ct = getSelectedCalcType();
+    const statusLabels = { draft: 'Draft', review: 'Review', approved: 'Approved' };
+    const uploadLabel = { yes: 'Yes', no: 'No', tbc: 'TBC' };
+    const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+    let md = '';
+
+    // ── Header ──
+    md += `# ${ct ? ct.name : 'Calculation'} Spec — ${state.schemeName || 'Unnamed Scheme'}\n\n`;
+    md += `| Field | Value |\n|-------|-------|\n`;
+    md += `| Scheme | ${state.schemeName || 'TBC'} |\n`;
+    md += `| Author | ${state.requesterName || 'TBC'} |\n`;
+    md += `| Date | ${state.specDate} |\n`;
+    md += `| Version | ${state.specVersion} |\n`;
+    md += `| Status | ${statusLabels[state.specStatus] || state.specStatus} |\n`;
+    md += `| Calc Type | ${ct ? ct.name : 'TBC'} |\n`;
+    md += '\n---\n\n';
+
+    // ── Section 1: Valid Categories ──
+    md += `## 1. Valid Categories\n\n`;
+    md += `Which scheme categories can this calculation run for?\n\n`;
+    md += `| Category Key | Description |\n|-------------|-------------|\n`;
+    if (state.validCategories.trim()) {
+        state.validCategories.split(/[,\n]+/).map(c => c.trim()).filter(Boolean).forEach(cat => {
+            md += `| ${cat} | |\n`;
+        });
+    } else {
+        md += `| *(none specified)* | |\n`;
+    }
+    md += '\n---\n\n';
+
+    // ── Section 2: Service Tranches & Deferred Elements ──
+    md += `## 2. Service Tranches & Deferred Elements\n\n`;
+    md += `**Revaluation types:**\n\n`;
+    md += `- **s52** — Statutory revaluation, compound. Uses assumed future reval (AFR) for years beyond latest published factors.\n`;
+    md += `- **s101** — Statutory revaluation capped at CPI, compound. Uses AFR for future years.\n`;
+    md += `- **Fixed** — No revaluation. Factor is always 1.\n`;
+    md += `- **GMP** — GMP-specific revaluation. See section 3.\n\n`;
+
+    if (state.tranches.length === 0) {
+        md += `*No tranches defined.*\n\n`;
+    }
+
+    state.tranches.forEach((t, idx) => {
+        const bt = MODULE_LIBRARY.benefitTypes.find(b => b.id === t.benefitType);
+        const ar = MODULE_LIBRARY.accrualRates.find(a => a.id === t.accrualRate);
+        const rv = MODULE_LIBRARY.revaluationMethods.find(r => r.id === t.revaluation);
+        const rf = MODULE_LIBRARY.retirementFactorTypes.find(f => f.id === t.retirementFactor);
+        const gr = t.hasGMP ? MODULE_LIBRARY.gmpRevalMethods.find(g => g.id === t.gmpReval) : null;
+
+        md += `### Tranche ${idx + 1}: ${t.name || 'Untitled'}\n\n`;
+        md += `| Setting | Value |\n|---------|-------|\n`;
+        md += `| Period | ${t.periodFrom || 'TBC'} to ${t.periodTo || 'ongoing'} |\n`;
+        md += `| Normal Pension Age | ${t.npa} |\n`;
+        md += `| Benefit Type | ${bt ? bt.name : 'TBC'} |\n`;
+        md += `| Accrual Rate | ${ar ? ar.name : 'TBC'} |\n`;
+        md += `| Revaluation | ${rv ? rv.name : 'TBC'} |\n`;
+        if (t.afrRate) md += `| AFR Rate | ${t.afrRate} |\n`;
+        md += `| Retirement Factor | ${rf ? rf.name : 'TBC'} |\n`;
+        if (t.erfTableKey) md += `| ERF Table Key | ${t.erfTableKey} (${uploadLabel[t.erfUploadStatus] || 'TBC'}) |\n`;
+        if (t.lrfTableKey) md += `| LRF Table Key | ${t.lrfTableKey} (${uploadLabel[t.lrfUploadStatus] || 'TBC'}) |\n`;
+        md += `| Includes GMP? | ${t.hasGMP ? 'Yes' : 'No'} |\n`;
+        if (t.hasGMP && gr) md += `| GMP Reval Method | ${gr.name} |\n`;
+        md += '\n';
+
+        if (t.elementKeys.trim()) {
+            md += `**Element keys:**\n\n`;
+            md += `| Deferred Element Key | Reval Type | AFR Rate | Notes |\n`;
+            md += `|---------------------|-----------|---------|-------|\n`;
+            t.elementKeys.split(/[,\n]+/).map(k => k.trim()).filter(Boolean).forEach(key => {
+                const isGmp = key.toLowerCase().includes('gmp');
+                const rType = isGmp ? 'GMP' : (rv ? rv.name : 'TBC');
+                md += `| ${key} | ${rType} | ${t.afrRate || ''} | |\n`;
+            });
+            md += '\n';
+        }
+
+        if (t.elementRollup.trim()) {
+            md += `**Element roll-up:** ${t.elementRollup}\n\n`;
+        }
+
+        if (t.notes.trim()) {
+            md += `> ${t.notes}\n\n`;
+        }
+    });
+
+    // AFR summary table
+    const tranchesWithAfr = state.tranches.filter(t => t.afrRate);
+    if (tranchesWithAfr.length > 0) {
+        md += `**AFR reference values to set in Calculate** (Factors > Decimal Reference Values):\n\n`;
+        md += `| Reference Key | Value | Used for |\n|--------------|-------|----------|\n`;
+        tranchesWithAfr.forEach((t, idx) => {
+            md += `| AFR${idx + 1} | ${t.afrRate} | ${t.name || 'Tranche ' + (state.tranches.indexOf(t) + 1)} |\n`;
+        });
+        md += '\n';
+    }
+
+    md += `**Standard formula** (applies to s52, s101, and Fixed):\n\n`;
+    md += `> Element at retirement = Element at leaving x Revaluation Factor x Retirement Factor (ERF or LRF)\n\n`;
+    md += '---\n\n';
+
+    // ── Section 3: GMP ──
+    if (hasGMP()) {
+        const gmpRetLabel = state.gmpRetFactorRule === 'apply_erf' ? 'Apply ERF/LRF' : '1.0 (no ERF/LRF)';
+        const revalPeriodOpt = state.gmpOptions['gmp_6aprils'];
+        const revalPeriodLabel = revalPeriodOpt === 'complete_tax_years' ? 'Complete tax years' : revalPeriodOpt === 'six_aprils' ? '6 Aprils' : 'TBC';
+        const restrictionOpt = state.gmpOptions['gmp_restriction'];
+        const restrictionLabel = restrictionOpt === 'at_gmp_date' ? 'Total GMP at **GMP date**' : restrictionOpt === 'at_retirement' ? 'Total GMP at **retirement date**' : 'TBC';
+        const cappedOpt = state.gmpOptions['gmp_260_weeks'];
+        const cappedLabel = cappedOpt !== undefined ? 'Yes' : 'No';
+
+        md += `## 3. GMP\n\n`;
+        md += `### GMP settings\n\n`;
+        md += `| Setting | Value | Options / guidance |\n|---------|-------|--------------------|`;
+        md += `\n| GMP date | DOB + 65 (M) / DOB + 60 (F) | Usually standard |`;
+        md += `\n| Revaluation method | Per member record | Fixed / Limited / s148 |`;
+        md += `\n| Capped at 260 weeks? | ${cappedLabel} | |`;
+        md += `\n| GMP pension increase date (month) | ${monthNames[(parseInt(state.gmpIncreaseMonth)||4)-1]} (${state.gmpIncreaseMonth}) | Usually April |`;
+        md += `\n| GMP pension increase date (day) | ${state.gmpIncreaseDay} | Usually 1st |`;
+        md += `\n| s109 assumption (future uplift) | ${state.s109Rate || 'TBC'} | e.g. 1.03 (3%) |`;
+        md += `\n| 6 Aprils or complete tax years? | ${revalPeriodLabel} | |`;
+        md += `\n| GMP restriction based on | ${restrictionLabel} | |\n\n`;
+
+        md += `### GMP revaluation formula\n\n`;
+        md += `> **POST88 GMP:** ((Weekly value x Reval Factor x Missed Increases x Increments) rounded to nearest penny) x 52 x Retirement Factor\n>\n`;
+        md += `> **PRE88 GMP:** ((Weekly value x Reval Factor x Increments) rounded to nearest penny) x 52 x Retirement Factor\n\n`;
+        md += `*Note: POST88 GMP gets missed increases; PRE88 does not.*\n\n`;
+
+        md += `### GMP retirement factor rule\n\n`;
+        md += `| Scenario | Retirement factor for GMP |\n|---------|--------------------------|`;
+        md += `\n| Retiring before GMP age | Normal ERF/LRF |`;
+        md += `\n| Retiring after GMP age | ${gmpRetLabel} |\n\n`;
+
+        if (state.post88GmpElementKeys.trim()) {
+            md += `### POST88 GMP element keys\n\n`;
+            md += `| Element Key |\n|------------|\n`;
+            state.post88GmpElementKeys.split(/[,\n]+/).map(k => k.trim()).filter(Boolean).forEach(key => {
+                md += `| ${key} |\n`;
+            });
+            md += '\n';
+        }
+
+        md += `### GMP Increases file\n\n`;
+        md += `| Setting | Value |\n|---------|-------|\n`;
+        md += `| Factor key in Calculate | GMPINC |\n`;
+        md += `| Uploaded? | TBC |\n`;
+        md += `| Location in Calculate | Factors > Pension Increases |\n\n`;
+
+        // GMP Equalisation
+        const eqOpt = state.gmpOptions['gmp_equalisation'];
+        if (eqOpt) {
+            const eqItem = MODULE_LIBRARY.gmpHandling.find(g => g.id === 'gmp_equalisation');
+            let eqMethod = '';
+            if (eqOpt !== true && eqItem && eqItem.methods) {
+                const sub = eqItem.methods.find(m => m.id === eqOpt);
+                if (sub) eqMethod = sub.name;
+            }
+            md += `**GMP Equalisation:** ${eqMethod || 'Yes (method TBC)'}\n\n`;
+        }
+
+        md += '---\n\n';
+    }
+
+    // ── Section 4: Retirement Factors ──
+    md += `## 4. Retirement Factors\n\n`;
+    const tranchesWithErf = state.tranches.filter(t => t.erfTableKey || t.lrfTableKey);
+    if (tranchesWithErf.length > 0) {
+        md += `### Early Retirement Factors (ERF)\n\n`;
+        md += `| Tranche | Factor Table Key | Uploaded? | Location |\n|---------|-----------------|----------|----------|\n`;
+        state.tranches.filter(t => t.erfTableKey).forEach(t => {
+            md += `| ${t.name || 'Untitled'} | ${t.erfTableKey} | ${uploadLabel[t.erfUploadStatus] || 'TBC'} | Factors > Decimal Factors |\n`;
+        });
+        md += '\n';
+
+        md += `### Late Retirement Factors (LRF)\n\n`;
+        md += `| Tranche | Factor Table Key | Uploaded? | Location |\n|---------|-----------------|----------|----------|\n`;
+        state.tranches.filter(t => t.lrfTableKey).forEach(t => {
+            md += `| ${t.name || 'Untitled'} | ${t.lrfTableKey} | ${uploadLabel[t.lrfUploadStatus] || 'TBC'} | Factors > Decimal Factors |\n`;
+        });
+        md += '\n';
+    } else {
+        md += `*No factor table keys specified yet. Fill in per tranche.*\n\n`;
+    }
+
+    // Check if all tranches use same factor
+    const erfKeys = [...new Set(state.tranches.map(t => t.erfTableKey).filter(Boolean))];
+    if (erfKeys.length <= 1) {
+        md += `**Factor application:** Standard (all elements use the same table)\n\n`;
+    } else {
+        md += `**Factor application:** Different tables per tranche (see above)\n\n`;
+    }
+    md += '---\n\n';
+
+    // ── Section 5: Element Roll-up ──
+    md += `## 5. Pension Element Roll-up\n\n`;
+    md += `How do deferred elements group into pension elements for commutation?\n\n`;
+    const tranchesWithRollup = state.tranches.filter(t => t.elementRollup.trim());
+    if (tranchesWithRollup.length > 0) {
+        md += `| Pension Element / Tranche | Built from (deferred element keys) |\n|--------------------------|-----------------------------------|\n`;
+        tranchesWithRollup.forEach(t => {
+            md += `| ${t.name || 'Untitled'} | ${t.elementRollup} |\n`;
+        });
+    } else {
+        md += `| Pension Element | Built from (deferred element keys) |\n|----------------|-----------------------------------|\n`;
+        md += `| *(TBC)* | |\n`;
+    }
+    md += '\n---\n\n';
+
+    // ── Section 6: Commutation / PCLS ──
+    md += `## 6. Commutation / PCLS\n\n`;
+    if (state.commutationStyle) {
+        const cs = MODULE_LIBRARY.commutationStyles.find(s => s.id === state.commutationStyle);
+        const cfs = state.commutationFactorSource ? MODULE_LIBRARY.commutationFactorSources.find(f => f.id === state.commutationFactorSource) : null;
+        const spouseGmpLabel = state.spouseGmpMinimum === 'nil_pre88' ? 'Nil Pre-88 GMP' : '50% all GMP';
+
+        if (state.commutationFactorTableKey) {
+            md += `### Commutation factors\n\n`;
+            md += `| Setting | Value |\n|---------|-------|\n`;
+            md += `| Factor table key in Calculate | ${state.commutationFactorTableKey} |\n`;
+            md += `| Uploaded? | ${uploadLabel[state.commutationFactorUploaded] || 'TBC'} |\n\n`;
+        }
+
+        md += `### Commutation settings\n\n`;
+        md += `| Setting | Value | Notes |\n|---------|-------|-------|\n`;
+        md += `| Commutation order | ${cs ? cs.name : 'TBC'} | |\n`;
+        if (cfs) md += `| Factor source | ${cfs.name} | |\n`;
+        md += `| Spouse pension % | ${state.spousePensionPct}% | Default is 50% |\n`;
+        md += `| Spouses GMP minimum option | ${spouseGmpLabel} | |\n`;
+        md += `| DC Fund included in cash? | ${state.dcFundInCash === 'yes' ? 'Yes' : 'No'} | |\n`;
+        md += `| Rounding (decimal places) | ${state.commutationRounding} | Default is 2 |\n\n`;
+
+        if (state.commutationStyle === 'ordered' && state.commutationOrder.trim()) {
+            md += `### Commutation order\n\n`;
+            md += `| Priority | Pension Element |\n|----------|----------------|\n`;
+            state.commutationOrder.split('\n').filter(l => l.trim()).forEach((line, i) => {
+                const cleaned = line.replace(/^\d+[\.\)\-]\s*/, '');
+                md += `| ${i + 1} | ${cleaned} |\n`;
+            });
+            md += '\n';
+        }
+
+        if (state.commutationNotes.trim()) {
+            md += `### Anything non-standard about commutation?\n\n> ${state.commutationNotes}\n\n`;
+        }
+    } else {
+        md += `*Commutation not configured.*\n\n`;
+    }
+    md += '---\n\n';
+
+    // ── Section 7: Validations ──
+    md += `## 7. Validations\n\n`;
+    md += `### Pre-calculation checks (errors — stop the calc)\n\n`;
+    md += `| # | Check | Applies? | Notes |\n|---|-------|----------|-------|\n`;
+    MODULE_LIBRARY.validations.preCalc.forEach((v, i) => {
+        const applies = state.validationsPreCalc.includes(v.id) ? 'Yes' : 'No';
+        md += `| ${i + 1} | ${v.name} | ${applies} | |\n`;
+    });
+    md += '\n';
+
+    md += `### Post-calculation checks (warnings — calc still runs)\n\n`;
+    md += `| # | Check | Applies? | Notes |\n|---|-------|----------|-------|\n`;
+    MODULE_LIBRARY.validations.postCalc.forEach((v, i) => {
+        const applies = state.validationsPostCalc.includes(v.id) ? 'Yes' : 'No';
+        md += `| ${i + 1} | ${v.name} | ${applies} | |\n`;
+    });
+    md += '\n---\n\n';
+
+    // ── Section 8: Dependencies ──
+    md += `## 8. Dependencies & Setup Checklist\n\n`;
+    md += `| # | Dependency | Status | Notes |\n|---|-----------|--------|-------|\n`;
+    MODULE_LIBRARY.dependencies.forEach((d, i) => {
+        const selected = state.dependencies.includes(d.id);
+        md += `| ${i + 1} | ${d.name} | ${selected ? 'Required' : ''} | ${d.description} |\n`;
+    });
+    md += '\n---\n\n';
+
+    // ── Section 9: Anything Else ──
+    md += `## 9. Anything else?\n\n`;
+    if (state.notes.trim()) {
+        md += `> ${state.notes.split('\n').join('\n> ')}\n\n`;
+    } else {
+        md += `>\n\n`;
+    }
+    md += '---\n\n';
+
+    // ── Section 10: Sign-Off ──
+    md += `## 10. Sign-Off\n\n`;
+    md += `| Role | Name | Date |\n|------|------|------|\n`;
+    md += `| Analyst | ${state.analystName || ''} | ${state.analystDate || ''} |\n`;
+    md += `| Coder | ${state.coderName || ''} | ${state.coderDate || ''} |\n`;
+    md += `| Reviewer | ${state.reviewerName || ''} | ${state.reviewerDate || ''} |\n`;
+
+    const calcSlug = ct ? ct.shortName.replace(/[^a-zA-Z0-9]/g, '_') : 'calc';
+    download(md, `${calcSlug}_Spec_${slug(state.schemeName)}.md`, 'text/markdown');
+}
+
 function exportText() {
     const ct = getSelectedCalcType();
     let text = '='.repeat(60) + '\n';
