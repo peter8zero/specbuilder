@@ -141,7 +141,7 @@
         .step-content {
             background: var(--xps-card-bg); border-radius: 12px;
             padding: 28px; border: 1px solid var(--xps-border);
-            min-height: 400px;
+            min-height: 400px; min-width: 0; overflow: hidden;
         }
         .step-title { font-size: 1.3rem; font-weight: 600; color: var(--xps-blue); margin-bottom: 6px; }
         .step-subtitle { font-size: 0.9rem; color: var(--xps-text-muted); margin-bottom: 24px; }
@@ -168,14 +168,15 @@
         .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
         /* ─── FORM INPUTS ─── */
-        .form-group { margin-bottom: 20px; }
+        .form-group { margin-bottom: 20px; min-width: 0; overflow: hidden; }
         .form-label { display: block; font-size: 0.85rem; font-weight: 500; color: var(--xps-text); margin-bottom: 6px; }
         .form-input, .form-textarea, .form-select {
-            width: 100%; padding: 10px 14px;
+            width: 100%; max-width: 100%; min-width: 0;
+            padding: 10px 14px;
             border: 2px solid var(--xps-charcoal); border-radius: 6px;
             background: var(--xps-charcoal-dark); color: var(--xps-text);
             font-size: 0.9rem; outline: none; transition: border-color 0.2s;
-            font-family: inherit;
+            font-family: inherit; box-sizing: border-box;
         }
         .form-input:focus, .form-textarea:focus, .form-select:focus {
             border-color: var(--xps-blue);
@@ -232,7 +233,9 @@
         .tranche-body.open { display: block; }
         .tranche-row {
             display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+            min-width: 0;
         }
+        .tranche-row > * { min-width: 0; }
         .tranche-toggle {
             display: flex; align-items: center; gap: 10px; padding: 8px 0;
         }
