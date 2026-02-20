@@ -39,7 +39,7 @@
             --xps-border: rgba(0, 0, 0, 0.1);
         }
 
-        html { scrollbar-gutter: stable; }
+        html { scrollbar-gutter: stable; overflow-x: hidden; }
 
         body {
             font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Oxygen, Ubuntu, sans-serif;
@@ -47,6 +47,7 @@
             min-height: 100vh;
             color: var(--xps-text);
             line-height: 1.6;
+            overflow-x: hidden;
         }
 
         /* ─── HEADER ─── */
@@ -255,6 +256,7 @@
             background: var(--xps-charcoal-dark); color: var(--xps-text);
             font-size: 0.85rem; font-family: 'Consolas', 'Monaco', monospace;
             outline: none; resize: vertical; transition: border-color 0.2s;
+            word-break: break-all; box-sizing: border-box;
         }
         .element-keys-area:focus {
             border-color: var(--xps-blue);
@@ -345,15 +347,16 @@
         .review-section { padding: 16px 20px; border-bottom: 1px solid var(--xps-border); }
         .review-section:last-child { border-bottom: none; }
         .review-section-title { font-size: 0.85rem; font-weight: 600; color: var(--xps-blue); margin-bottom: 8px; }
-        .review-item { display: flex; justify-content: space-between; padding: 4px 0; font-size: 0.85rem; }
-        .review-item-label { color: var(--xps-text-muted); }
-        .review-item-value { color: var(--xps-text); font-weight: 500; text-align: right; max-width: 60%; }
+        .review-item { display: flex; justify-content: space-between; padding: 4px 0; font-size: 0.85rem; gap: 8px; }
+        .review-item-label { color: var(--xps-text-muted); flex-shrink: 0; }
+        .review-item-value { color: var(--xps-text); font-weight: 500; text-align: right; max-width: 60%; word-break: break-word; overflow-wrap: break-word; }
         .review-list { list-style: none; padding: 0; }
         .review-list li { padding: 3px 0; font-size: 0.85rem; color: var(--xps-text); }
         .review-list li::before { content: '\2022'; color: var(--xps-blue); margin-right: 8px; }
         .review-notes {
             background: var(--xps-charcoal); padding: 12px; border-radius: 6px;
             font-size: 0.85rem; color: var(--xps-text); white-space: pre-wrap;
+            word-break: break-word; overflow-wrap: break-word;
         }
         .review-tranche {
             background: var(--xps-charcoal); border-radius: 8px;
@@ -411,12 +414,38 @@
             .step-indicator { padding: 12px 12px 28px; }
             .step-label { display: none; }
             .tranche-row { grid-template-columns: 1fr; }
+            .review-item { flex-direction: column; gap: 2px; }
+            .review-item-label { flex-shrink: unset; }
+            .review-item-value { text-align: left; max-width: 100%; }
         }
         @media (max-width: 600px) {
             .header-actions { flex-wrap: wrap; }
-            .step-content { padding: 20px; }
+            .logo-text span { display: none; }
+            .step-content { padding: 16px; }
+            .step-dot { width: 30px; height: 30px; font-size: 0.7rem; }
+            .step-connector { min-width: 8px; }
+            .step-indicator { padding: 10px 8px 12px; }
             .export-bar { flex-direction: column; }
             .export-bar .btn { width: 100%; justify-content: center; }
+            .order-actions { flex-direction: column; }
+            .order-actions .btn { width: 100%; }
+            .selection-card { padding: 14px; }
+            .card-name { font-size: 0.9rem; padding-right: 30px; }
+            .card-desc { font-size: 0.78rem; }
+            .review-section { padding: 12px 14px; }
+            .review-tranche { padding: 10px 12px; }
+            .tranche-header { padding: 10px 14px; }
+            .tranche-body { padding: 14px; }
+            .checkbox-item { padding: 10px; }
+            .form-input, .form-textarea, .form-select, .element-keys-area { font-size: 16px; }
+        }
+        @media (max-width: 380px) {
+            .app-container { padding: 8px; }
+            .step-content { padding: 12px; }
+            .step-dot { width: 26px; height: 26px; font-size: 0.65rem; }
+            .step-connector { min-width: 4px; }
+            .header-bar { padding: 10px 12px; }
+            .logo-text { font-size: 1rem; }
         }
 
         /* ─── PRINT ─── */
