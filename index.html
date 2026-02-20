@@ -1,0 +1,1913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pension Calc Specbuilder</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="module-library.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --xps-blue: #4A9FD9;
+            --xps-blue-light: #6BB3E3;
+            --xps-blue-dark: #3B8AC4;
+            --xps-charcoal: #2D3539;
+            --xps-charcoal-light: #3D474C;
+            --xps-charcoal-dark: #1E2528;
+            --xps-dark-bg: #161B1E;
+            --xps-card-bg: #232A2E;
+            --xps-text: #F0F2F3;
+            --xps-text-muted: #8A9499;
+            --xps-border: rgba(255, 255, 255, 0.1);
+            --xps-success: #4CAF50;
+            --xps-warning: #FF9800;
+            --xps-danger: #F44336;
+            --xps-purple: #9C27B0;
+            --xps-accent: #26C6DA;
+        }
+
+        [data-theme="light"] {
+            --xps-charcoal: #E8EAEC;
+            --xps-charcoal-light: #F5F6F7;
+            --xps-charcoal-dark: #D0D4D8;
+            --xps-dark-bg: #F0F2F4;
+            --xps-card-bg: #FFFFFF;
+            --xps-text: #1E2528;
+            --xps-text-muted: #5A6469;
+            --xps-border: rgba(0, 0, 0, 0.1);
+        }
+
+        html { scrollbar-gutter: stable; }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--xps-dark-bg);
+            min-height: 100vh;
+            color: var(--xps-text);
+            line-height: 1.6;
+        }
+
+        /* ─── HEADER ─── */
+        .header-bar {
+            background: var(--xps-charcoal);
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 3px solid var(--xps-blue);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .logo-container { display: flex; align-items: center; gap: 14px; }
+        .logo-icon {
+            width: 32px; height: 32px;
+            background: var(--xps-blue);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; color: #fff; font-weight: 700;
+        }
+        .logo-text { font-size: 1.25rem; font-weight: 600; color: var(--xps-text); }
+        .logo-text span { font-weight: 300; color: var(--xps-text-muted); }
+        .header-actions { display: flex; gap: 8px; align-items: center; }
+        .header-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 14px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--xps-border);
+            border-radius: 6px;
+            color: var(--xps-text-muted);
+            font-size: 0.85rem; cursor: pointer; transition: all 0.2s;
+        }
+        .header-btn:hover {
+            color: var(--xps-blue);
+            background: rgba(74,159,217,0.15);
+            border-color: var(--xps-blue);
+        }
+        .theme-toggle {
+            display: flex; background: rgba(0,0,0,0.2);
+            border-radius: 6px; padding: 3px; gap: 2px;
+        }
+        .theme-toggle button {
+            padding: 6px 12px; border: none; background: transparent;
+            color: var(--xps-text-muted); font-size: 0.8rem; font-weight: 500;
+            border-radius: 4px; cursor: pointer; transition: all 0.2s;
+        }
+        .theme-toggle button:hover { color: var(--xps-text); }
+        .theme-toggle button.active { background: var(--xps-blue); color: #fff; }
+
+        /* ─── LAYOUT ─── */
+        .app-container {
+            max-width: 1400px; margin: 0 auto; padding: 24px;
+            display: grid; grid-template-columns: 1fr 360px;
+            gap: 24px; align-items: start;
+        }
+
+        /* ─── STEP INDICATOR ─── */
+        .step-indicator {
+            display: flex; align-items: center; gap: 0;
+            margin-bottom: 24px; padding: 16px 20px 32px;
+            background: var(--xps-card-bg);
+            border-radius: 12px; border: 1px solid var(--xps-border);
+        }
+        .step-dot {
+            width: 36px; height: 36px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.8rem; font-weight: 600;
+            background: var(--xps-charcoal); color: var(--xps-text-muted);
+            cursor: pointer; transition: all 0.3s; flex-shrink: 0;
+            border: 2px solid transparent; position: relative;
+        }
+        .step-dot:hover { border-color: var(--xps-blue); color: var(--xps-text); }
+        .step-dot.active { background: var(--xps-blue); color: #fff; border-color: var(--xps-blue); }
+        .step-dot.completed { background: var(--xps-success); color: #fff; border-color: var(--xps-success); }
+        .step-dot.skipped { opacity: 0.4; cursor: not-allowed; }
+        .step-connector {
+            flex: 1; height: 2px; background: var(--xps-charcoal);
+            min-width: 20px; transition: background 0.3s;
+        }
+        .step-connector.completed { background: var(--xps-success); }
+        .step-label {
+            position: absolute; top: 42px; left: 50%;
+            transform: translateX(-50%); font-size: 0.65rem;
+            color: var(--xps-text-muted); white-space: nowrap; pointer-events: none;
+        }
+        .step-dot.active .step-label { color: var(--xps-blue); font-weight: 600; }
+
+        /* ─── STEP CONTENT ─── */
+        .step-content {
+            background: var(--xps-card-bg); border-radius: 12px;
+            padding: 28px; border: 1px solid var(--xps-border);
+            min-height: 400px;
+        }
+        .step-title { font-size: 1.3rem; font-weight: 600; color: var(--xps-blue); margin-bottom: 6px; }
+        .step-subtitle { font-size: 0.9rem; color: var(--xps-text-muted); margin-bottom: 24px; }
+        .step-nav {
+            display: flex; justify-content: space-between;
+            margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--xps-border);
+        }
+
+        /* ─── BUTTONS ─── */
+        .btn {
+            padding: 10px 24px; border: none; border-radius: 8px;
+            font-size: 0.9rem; font-weight: 600; cursor: pointer;
+            transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;
+        }
+        .btn-primary { background: var(--xps-blue); color: #fff; }
+        .btn-primary:hover { background: var(--xps-blue-dark); }
+        .btn-secondary { background: var(--xps-charcoal); color: var(--xps-text); border: 1px solid var(--xps-border); }
+        .btn-secondary:hover { border-color: var(--xps-blue); color: var(--xps-blue); }
+        .btn-success { background: var(--xps-success); color: #fff; }
+        .btn-success:hover { filter: brightness(1.1); }
+        .btn-danger { background: var(--xps-danger); color: #fff; }
+        .btn-danger:hover { filter: brightness(1.1); }
+        .btn-sm { padding: 6px 14px; font-size: 0.8rem; }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* ─── FORM INPUTS ─── */
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; font-size: 0.85rem; font-weight: 500; color: var(--xps-text); margin-bottom: 6px; }
+        .form-input, .form-textarea, .form-select {
+            width: 100%; padding: 10px 14px;
+            border: 2px solid var(--xps-charcoal); border-radius: 6px;
+            background: var(--xps-charcoal-dark); color: var(--xps-text);
+            font-size: 0.9rem; outline: none; transition: border-color 0.2s;
+            font-family: inherit;
+        }
+        .form-input:focus, .form-textarea:focus, .form-select:focus {
+            border-color: var(--xps-blue);
+            box-shadow: 0 0 0 3px rgba(74,159,217,0.15);
+        }
+        .form-textarea { min-height: 80px; resize: vertical; }
+        .form-select { cursor: pointer; }
+        .form-hint { font-size: 0.75rem; color: var(--xps-text-muted); margin-top: 4px; }
+
+        /* ─── SELECTION CARDS (calc type) ─── */
+        .card-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px;
+        }
+        .selection-card {
+            padding: 18px; background: var(--xps-charcoal);
+            border: 2px solid var(--xps-border); border-radius: 10px;
+            cursor: pointer; transition: all 0.2s; position: relative;
+        }
+        .selection-card:hover { border-color: var(--xps-blue); background: rgba(74,159,217,0.08); }
+        .selection-card.selected { border-color: var(--xps-blue); background: rgba(74,159,217,0.12); }
+        .selection-card.selected::after {
+            content: '\2713'; position: absolute; top: 10px; right: 12px;
+            width: 24px; height: 24px; background: var(--xps-blue); color: #fff;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 14px; font-weight: 700;
+        }
+        .card-name { font-size: 0.95rem; font-weight: 600; color: var(--xps-text); margin-bottom: 6px; padding-right: 28px; }
+        .card-desc { font-size: 0.8rem; color: var(--xps-text-muted); line-height: 1.5; }
+        .card-detail { font-size: 0.75rem; color: var(--xps-accent); margin-top: 6px; font-style: italic; }
+
+        /* ─── TRANCHE CARDS ─── */
+        .tranche-list { display: flex; flex-direction: column; gap: 16px; }
+        .tranche-card {
+            background: var(--xps-charcoal); border: 2px solid var(--xps-border);
+            border-radius: 10px; overflow: hidden; transition: border-color 0.2s;
+        }
+        .tranche-card:hover { border-color: rgba(74,159,217,0.3); }
+        .tranche-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 14px 18px; background: rgba(74,159,217,0.08);
+            border-bottom: 1px solid var(--xps-border); cursor: pointer;
+        }
+        .tranche-header-left { display: flex; align-items: center; gap: 10px; }
+        .tranche-number {
+            width: 28px; height: 28px; border-radius: 50%;
+            background: var(--xps-blue); color: #fff;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.8rem; font-weight: 700; flex-shrink: 0;
+        }
+        .tranche-title { font-size: 0.95rem; font-weight: 600; color: var(--xps-text); }
+        .tranche-summary { font-size: 0.75rem; color: var(--xps-text-muted); }
+        .tranche-header-actions { display: flex; gap: 6px; }
+        .tranche-body { padding: 18px; display: none; }
+        .tranche-body.open { display: block; }
+        .tranche-row {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+        }
+        .tranche-toggle {
+            display: flex; align-items: center; gap: 10px; padding: 8px 0;
+        }
+        .tranche-toggle input[type="checkbox"] {
+            width: 18px; height: 18px; accent-color: var(--xps-blue); cursor: pointer;
+        }
+        .tranche-toggle label { font-size: 0.85rem; color: var(--xps-text); cursor: pointer; }
+        .tranche-toggle .hint { font-size: 0.75rem; color: var(--xps-text-muted); margin-left: 4px; }
+        .add-tranche-btn {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 16px; border: 2px dashed var(--xps-border); border-radius: 10px;
+            background: transparent; color: var(--xps-text-muted);
+            font-size: 0.9rem; cursor: pointer; transition: all 0.2s; width: 100%;
+        }
+        .add-tranche-btn:hover {
+            border-color: var(--xps-blue); color: var(--xps-blue); background: rgba(74,159,217,0.05);
+        }
+        .element-keys-area {
+            width: 100%; min-height: 60px; padding: 10px 14px;
+            border: 2px solid var(--xps-charcoal-dark); border-radius: 6px;
+            background: var(--xps-charcoal-dark); color: var(--xps-text);
+            font-size: 0.85rem; font-family: 'Consolas', 'Monaco', monospace;
+            outline: none; resize: vertical; transition: border-color 0.2s;
+        }
+        .element-keys-area:focus {
+            border-color: var(--xps-blue);
+            box-shadow: 0 0 0 3px rgba(74,159,217,0.15);
+        }
+
+        /* ─── GMP HANDLING ─── */
+        .option-group {
+            margin-top: 12px; padding-top: 10px;
+            border-top: 1px solid var(--xps-border);
+        }
+        .option-group label {
+            display: flex; align-items: center; gap: 8px;
+            padding: 6px 0; font-size: 0.8rem; color: var(--xps-text-muted); cursor: pointer;
+        }
+        .option-group label:hover { color: var(--xps-text); }
+        .option-group input[type="radio"] { accent-color: var(--xps-blue); }
+        .complexity-badge {
+            display: inline-block; padding: 2px 8px; border-radius: 10px;
+            font-size: 0.65rem; font-weight: 600; text-transform: uppercase; margin-left: 8px;
+        }
+        .complexity-low { background: rgba(76,175,80,0.2); color: var(--xps-success); }
+        .complexity-medium { background: rgba(255,152,0,0.2); color: var(--xps-warning); }
+        .complexity-high { background: rgba(244,67,54,0.2); color: var(--xps-danger); }
+
+        /* ─── CHECKBOX ITEMS ─── */
+        .checkbox-list { display: flex; flex-direction: column; gap: 8px; }
+        .checkbox-item {
+            display: flex; align-items: flex-start; gap: 10px;
+            padding: 12px 14px; background: var(--xps-charcoal);
+            border: 1px solid var(--xps-border); border-radius: 6px;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .checkbox-item:hover { border-color: var(--xps-blue); }
+        .checkbox-item.checked { border-color: var(--xps-blue); background: rgba(74,159,217,0.08); }
+        .checkbox-item input[type="checkbox"] {
+            width: 18px; height: 18px; margin-top: 2px;
+            cursor: pointer; accent-color: var(--xps-blue); flex-shrink: 0;
+        }
+        .checkbox-item-text { flex: 1; }
+        .checkbox-item-name { font-size: 0.9rem; font-weight: 500; color: var(--xps-text); }
+        .checkbox-item-desc { font-size: 0.78rem; color: var(--xps-text-muted); margin-top: 2px; }
+        .standard-badge {
+            font-size: 0.6rem; font-weight: 600; text-transform: uppercase;
+            background: rgba(76,175,80,0.2); color: var(--xps-success);
+            padding: 2px 6px; border-radius: 4px; margin-left: 6px;
+        }
+        .category-label {
+            font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 0.5px; color: var(--xps-text-muted);
+            margin-bottom: 10px; margin-top: 20px;
+            padding-bottom: 6px; border-bottom: 1px solid var(--xps-border);
+        }
+        .category-label:first-child { margin-top: 0; }
+
+        /* ─── ORDER PANEL ─── */
+        .order-panel { position: sticky; top: 80px; }
+        .order-card {
+            background: var(--xps-card-bg); border-radius: 12px;
+            border: 1px solid var(--xps-border); overflow: hidden;
+        }
+        .order-header { background: var(--xps-blue); color: #fff; padding: 16px 20px; font-size: 1.05rem; font-weight: 600; }
+        .order-body { padding: 16px 20px; }
+        .order-section { margin-bottom: 14px; }
+        .order-section:last-child { margin-bottom: 0; }
+        .order-section-title {
+            font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 0.5px; color: var(--xps-text-muted); margin-bottom: 4px;
+        }
+        .order-section-value { font-size: 0.85rem; color: var(--xps-text); }
+        .order-section-value.empty { color: var(--xps-text-muted); font-style: italic; font-size: 0.8rem; }
+        .order-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+        .order-tag {
+            display: inline-block; padding: 3px 8px;
+            background: var(--xps-charcoal); border-radius: 4px;
+            font-size: 0.75rem; color: var(--xps-text);
+        }
+        .order-tag.gmp { background: rgba(156,39,176,0.2); color: var(--xps-purple); }
+        .order-divider { height: 1px; background: var(--xps-border); margin: 12px 0; }
+        .order-actions {
+            padding: 12px 20px; border-top: 1px solid var(--xps-border);
+            display: flex; gap: 8px;
+        }
+        .order-actions .btn { flex: 1; font-size: 0.8rem; padding: 8px 12px; justify-content: center; }
+
+        /* ─── REVIEW ─── */
+        .review-sheet { border: 1px solid var(--xps-border); border-radius: 8px; overflow: hidden; }
+        .review-section { padding: 16px 20px; border-bottom: 1px solid var(--xps-border); }
+        .review-section:last-child { border-bottom: none; }
+        .review-section-title { font-size: 0.85rem; font-weight: 600; color: var(--xps-blue); margin-bottom: 8px; }
+        .review-item { display: flex; justify-content: space-between; padding: 4px 0; font-size: 0.85rem; }
+        .review-item-label { color: var(--xps-text-muted); }
+        .review-item-value { color: var(--xps-text); font-weight: 500; text-align: right; max-width: 60%; }
+        .review-list { list-style: none; padding: 0; }
+        .review-list li { padding: 3px 0; font-size: 0.85rem; color: var(--xps-text); }
+        .review-list li::before { content: '\2022'; color: var(--xps-blue); margin-right: 8px; }
+        .review-notes {
+            background: var(--xps-charcoal); padding: 12px; border-radius: 6px;
+            font-size: 0.85rem; color: var(--xps-text); white-space: pre-wrap;
+        }
+        .review-tranche {
+            background: var(--xps-charcoal); border-radius: 8px;
+            padding: 14px 16px; margin-bottom: 10px;
+        }
+        .review-tranche:last-child { margin-bottom: 0; }
+        .review-tranche-name { font-weight: 600; color: var(--xps-text); margin-bottom: 6px; font-size: 0.9rem; }
+        .export-bar { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+
+        /* ─── MODAL ─── */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+            z-index: 200; display: none; align-items: center; justify-content: center;
+        }
+        .modal-overlay.visible { display: flex; }
+        .modal {
+            background: var(--xps-card-bg); border-radius: 12px;
+            border: 1px solid var(--xps-border); width: 90%; max-width: 500px;
+            max-height: 80vh; overflow-y: auto;
+        }
+        .modal-header {
+            padding: 16px 20px; border-bottom: 1px solid var(--xps-border);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .modal-header h3 { font-size: 1rem; color: var(--xps-text); }
+        .modal-close {
+            background: none; border: none; color: var(--xps-text-muted);
+            font-size: 1.3rem; cursor: pointer; padding: 4px;
+        }
+        .modal-close:hover { color: var(--xps-text); }
+        .modal-body { padding: 20px; }
+        .saved-spec {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px; background: var(--xps-charcoal); border-radius: 6px;
+            margin-bottom: 8px; border: 1px solid var(--xps-border);
+        }
+        .saved-spec-info { flex: 1; }
+        .saved-spec-name { font-size: 0.9rem; font-weight: 500; color: var(--xps-text); }
+        .saved-spec-date { font-size: 0.75rem; color: var(--xps-text-muted); }
+        .saved-spec-actions { display: flex; gap: 6px; }
+        .saved-spec-actions button {
+            padding: 6px 10px; border: none; border-radius: 4px;
+            font-size: 0.75rem; cursor: pointer; font-weight: 500;
+        }
+        .btn-load { background: var(--xps-blue); color: #fff; }
+        .btn-delete { background: var(--xps-danger); color: #fff; }
+        .no-saved { color: var(--xps-text-muted); font-style: italic; font-size: 0.9rem; text-align: center; padding: 20px; }
+
+        /* ─── RESPONSIVE ─── */
+        @media (max-width: 900px) {
+            .app-container { grid-template-columns: 1fr; padding: 16px; }
+            .order-panel { position: static; }
+            .header-bar { padding: 12px 16px; flex-wrap: wrap; gap: 8px; }
+            .card-grid { grid-template-columns: 1fr; }
+            .step-indicator { padding: 12px 12px 28px; }
+            .step-label { display: none; }
+            .tranche-row { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 600px) {
+            .header-actions { flex-wrap: wrap; }
+            .step-content { padding: 20px; }
+            .export-bar { flex-direction: column; }
+            .export-bar .btn { width: 100%; justify-content: center; }
+        }
+
+        /* ─── PRINT ─── */
+        @media print {
+            body { background: #fff; color: #000; }
+            .header-bar, .step-indicator, .step-nav, .order-panel,
+            .export-bar, .header-actions { display: none !important; }
+            .app-container { grid-template-columns: 1fr; padding: 0; max-width: 100%; }
+            .step-content { border: none; padding: 0; background: #fff; break-inside: avoid; }
+            .review-sheet { border: 1px solid #ccc; }
+            .review-section { border-bottom: 1px solid #eee; }
+            .review-section-title { color: #333; }
+            .review-item-value { color: #000; }
+            .review-tranche { background: #f5f5f5; }
+            .print-header {
+                display: block !important; text-align: center;
+                margin-bottom: 20px; padding-bottom: 12px; border-bottom: 2px solid #333;
+            }
+            .print-header h1 { font-size: 1.4rem; }
+            .print-header p { font-size: 0.9rem; color: #666; }
+        }
+        .print-header { display: none; }
+
+        /* ─── ANIMATIONS ─── */
+        .fade-in { animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <div class="header-bar">
+        <div class="logo-container">
+            <div class="logo-icon">S</div>
+            <div class="logo-text">Specbuilder <span>Pension Calc Menu</span></div>
+        </div>
+        <div class="header-actions">
+            <button class="header-btn" onclick="saveSpec()" title="Save current spec">&#128190; Save</button>
+            <button class="header-btn" onclick="showLoadModal()" title="Load a saved spec">&#128194; Load</button>
+            <button class="header-btn" onclick="resetAll()" title="Start fresh">&#128260; New</button>
+            <div class="theme-toggle">
+                <button class="active" onclick="setTheme('dark')">Dark</button>
+                <button onclick="setTheme('light')">Light</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP -->
+    <div class="app-container">
+        <div class="main-content">
+            <div class="step-indicator" id="stepIndicator"></div>
+            <div class="step-content" id="stepContent"></div>
+        </div>
+        <div class="order-panel">
+            <div class="order-card">
+                <div class="order-header">Your Order</div>
+                <div class="order-body" id="orderBody">
+                    <p class="order-section-value empty">Start building your spec...</p>
+                </div>
+                <div class="order-actions">
+                    <button class="btn btn-secondary" onclick="goToStep(6)" style="font-size:0.8rem">Review Order</button>
+                    <button class="btn btn-primary" onclick="exportText()" style="font-size:0.8rem">Export</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOAD MODAL -->
+    <div class="modal-overlay" id="loadModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Saved Specs</h3>
+                <button class="modal-close" onclick="closeLoadModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="savedSpecsList"></div>
+        </div>
+    </div>
+
+    <!-- PRINT HEADER -->
+    <div class="print-header">
+        <h1>Pension Calc Spec Sheet</h1>
+        <p id="printSubtitle"></p>
+    </div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// STEPS & STATE
+// ═══════════════════════════════════════════════════════════════
+const STEPS = [
+    { id: 0, name: 'Scheme Info', short: 'Info' },
+    { id: 1, name: 'Calc Type', short: 'Type' },
+    { id: 2, name: 'Service Tranches', short: 'Tranches' },
+    { id: 3, name: 'GMP & Special Rules', short: 'GMP' },
+    { id: 4, name: 'Commutation', short: 'PCLS' },
+    { id: 5, name: 'Validations & Deps', short: 'Checks' },
+    { id: 6, name: 'Review & Export', short: 'Review' }
+];
+
+function newTranche() {
+    return {
+        id: 'tranche_' + Date.now() + '_' + Math.random().toString(36).substr(2,4),
+        name: '',
+        periodFrom: '',
+        periodTo: '',
+        npa: '65',
+        benefitType: 'final_salary',
+        accrualRate: '1_60',
+        revaluation: 's52',
+        retirementFactor: 'erf',
+        hasGMP: false,
+        gmpReval: 'gmp_fixed',
+        elementKeys: '',
+        notes: '',
+        open: true,
+        // ── AFR (Assumed Future Revaluation) ──
+        // The rate used for revaluation years beyond latest published factors.
+        // To add more AFR fields: copy this line and change the key name.
+        afrRate: '',
+        // ── Factor Table Keys ──
+        // The key names used to look up ERF/LRF tables in Calculate.
+        // To add more factor fields: copy the erfTableKey/lrfTableKey pattern.
+        erfTableKey: '',
+        lrfTableKey: '',
+        erfUploadStatus: 'tbc',   // 'yes' | 'no' | 'tbc'
+        lrfUploadStatus: 'tbc',   // 'yes' | 'no' | 'tbc'
+        // ── Element Roll-up ──
+        // How deferred elements group into pension elements for commutation.
+        // Free text — e.g. "DEF_PRE09 + DEF_PRE09_GMP => PRE09 pension element"
+        elementRollup: ''
+    };
+}
+
+let state = {
+    currentStep: 0,
+    returnStep: null,
+    // ── Step 0: Scheme Info ──
+    schemeName: '',
+    requesterName: '',
+    specDate: new Date().toISOString().split('T')[0],
+    specVersion: '1.0',
+    specStatus: 'draft',           // 'draft' | 'review' | 'approved'
+    validCategories: '',           // Free text — category keys that can run this calc
+    // ── Step 1: Calc Type ──
+    calcType: null,
+    // ── Step 2: Service Tranches ──
+    tranches: [],
+    // ── Step 3: GMP ──
+    gmpOptions: {},
+    gmpIncreaseMonth: '4',         // Month for GMP pension increase date (1-12)
+    gmpIncreaseDay: '1',           // Day for GMP pension increase date
+    s109Rate: '',                  // s109 assumption (future uplift), e.g. "1.03"
+    gmpRetFactorRule: 'no_erf',    // 'no_erf' | 'apply_erf' — does ERF/LRF apply after GMP age?
+    post88GmpElementKeys: '',      // Comma-separated element keys that get missed increases
+    // ── Step 4: Commutation ──
+    commutationStyle: null,
+    commutationFactorSource: null,
+    commutationOrder: '',
+    commutationNotes: '',
+    spousePensionPct: '50',        // Spouse pension % (e.g. "50", "66.67")
+    spouseGmpMinimum: '50_all',    // '50_all' | 'nil_pre88' — minimum spouse GMP option
+    dcFundInCash: 'no',            // 'yes' | 'no' — include DC fund in PCLS?
+    commutationRounding: '2',      // Decimal places for rounding
+    commutationFactorTableKey: '', // Factor table key in Calculate
+    commutationFactorUploaded: 'tbc', // 'yes' | 'no' | 'tbc'
+    // ── Step 5: Validations & Deps ──
+    validationsPreCalc: [],
+    validationsPostCalc: [],
+    dependencies: [],
+    notes: '',
+    // ── Step 6: Sign-Off ──
+    analystName: '',
+    analystDate: '',
+    coderName: '',
+    coderDate: '',
+    reviewerName: '',
+    reviewerDate: ''
+};
+
+// ═══════════════════════════════════════════════════════════════
+// THEME
+// ═══════════════════════════════════════════════════════════════
+function setTheme(theme) {
+    if (theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
+    else document.documentElement.removeAttribute('data-theme');
+    document.querySelectorAll('.theme-toggle button').forEach(b => {
+        b.classList.toggle('active', b.textContent.toLowerCase() === theme);
+    });
+    localStorage.setItem('specbuilder-theme', theme);
+}
+(function() { const s = localStorage.getItem('specbuilder-theme'); if (s) setTheme(s); })();
+
+// ═══════════════════════════════════════════════════════════════
+// STEP ENGINE
+// ═══════════════════════════════════════════════════════════════
+function goToStep(n) {
+    // Skip GMP step if no tranche has GMP
+    if (n === 3 && !hasGMP()) {
+        n = state.currentStep < 3 ? 4 : 2;
+    }
+    // Skip commutation for calc types that don't use it
+    const ct = getSelectedCalcType();
+    const noCommCalcs = ['transfer_out', 'death_before_ret', 'death_after_ret'];
+    if (n === 4 && ct && noCommCalcs.includes(ct.id)) {
+        n = state.currentStep < 4 ? 5 : (hasGMP() ? 3 : 2);
+    }
+    // Track return step for review
+    if (n === 6 && state.currentStep !== 6 && state.returnStep === null) {
+        state.returnStep = state.currentStep;
+    }
+    if (n !== 6) state.returnStep = null;
+
+    state.currentStep = Math.max(0, Math.min(n, STEPS.length - 1));
+    renderStepIndicator();
+    renderStep();
+    updateOrderPanel();
+    window.location.hash = state.currentStep;
+}
+
+function returnFromReview() {
+    const step = state.returnStep !== null ? state.returnStep : 5;
+    state.returnStep = null;
+    goToStep(step);
+}
+
+function hasGMP() {
+    return state.tranches.some(t => t.hasGMP);
+}
+
+function getSelectedCalcType() {
+    return MODULE_LIBRARY.calcTypes.find(c => c.id === state.calcType);
+}
+
+function isStepSkipped(i) {
+    if (i === 3 && !hasGMP()) return true;
+    const ct = getSelectedCalcType();
+    const noCommCalcs = ['transfer_out', 'death_before_ret', 'death_after_ret'];
+    if (i === 4 && ct && noCommCalcs.includes(ct.id)) return true;
+    return false;
+}
+
+function renderStepIndicator() {
+    const container = document.getElementById('stepIndicator');
+    let html = '';
+    STEPS.forEach((step, i) => {
+        const isActive = i === state.currentStep;
+        const skipped = isStepSkipped(i);
+        const isCompleted = !skipped && isStepCompleted(i);
+        let cls = 'step-dot';
+        if (isActive) cls += ' active';
+        else if (isCompleted) cls += ' completed';
+        if (skipped) cls += ' skipped';
+        html += `<div class="${cls}" onclick="${skipped ? '' : 'goToStep('+i+')'}" title="${step.name}">
+            ${isCompleted && !isActive ? '&#10003;' : i}
+            <span class="step-label">${step.short}</span>
+        </div>`;
+        if (i < STEPS.length - 1) {
+            html += `<div class="step-connector${isCompleted ? ' completed' : ''}"></div>`;
+        }
+    });
+    container.innerHTML = html;
+}
+
+function isStepCompleted(step) {
+    switch(step) {
+        case 0: return state.schemeName.trim() !== '';
+        case 1: return state.calcType !== null;
+        case 2: return state.tranches.length > 0 && state.tranches.some(t => t.name.trim() !== '');
+        case 3: return !hasGMP() || Object.keys(state.gmpOptions).length > 0;
+        case 4: return state.commutationStyle !== null;
+        case 5: return state.validationsPreCalc.length > 0 || state.validationsPostCalc.length > 0 || state.dependencies.length > 0;
+        case 6: return false;
+        default: return false;
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER STEPS
+// ═══════════════════════════════════════════════════════════════
+function renderStep() {
+    const el = document.getElementById('stepContent');
+    el.className = 'step-content fade-in';
+    switch(state.currentStep) {
+        case 0: renderStep0(el); break;
+        case 1: renderStep1(el); break;
+        case 2: renderStep2(el); break;
+        case 3: renderStep3(el); break;
+        case 4: renderStep4(el); break;
+        case 5: renderStep5(el); break;
+        case 6: renderStep6(el); break;
+    }
+}
+
+// ── STEP 0: Scheme Info ──
+// This step captures the scheme identity and spec metadata.
+// To add a new field: copy a form-group block, change the state key in oninput, and add the key to the state object above.
+function renderStep0(el) {
+    el.innerHTML = `
+        <div class="step-title">Scheme Information</div>
+        <div class="step-subtitle">Tell us the basics — who's this spec for?</div>
+        <div class="form-group">
+            <label class="form-label">Scheme Name</label>
+            <input class="form-input" value="${esc(state.schemeName)}" placeholder="e.g. ABC Pension Scheme" oninput="state.schemeName=this.value; updateOrderPanel()">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Requester Name</label>
+            <input class="form-input" value="${esc(state.requesterName)}" placeholder="Your name" oninput="state.requesterName=this.value; updateOrderPanel()">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Date</label>
+            <input class="form-input" type="date" value="${state.specDate}" oninput="state.specDate=this.value; updateOrderPanel()">
+        </div>
+        <!-- ── Spec Version & Status ── -->
+        <!-- These track the lifecycle of the spec document itself. -->
+        <div class="tranche-row">
+            <div class="form-group">
+                <label class="form-label">Spec Version</label>
+                <input class="form-input" value="${esc(state.specVersion)}" placeholder="e.g. 1.0" oninput="state.specVersion=this.value; updateOrderPanel()">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Spec Status</label>
+                <select class="form-select" onchange="state.specStatus=this.value; updateOrderPanel()">
+                    <option value="draft" ${state.specStatus==='draft'?'selected':''}>Draft</option>
+                    <option value="review" ${state.specStatus==='review'?'selected':''}>Review</option>
+                    <option value="approved" ${state.specStatus==='approved'?'selected':''}>Approved</option>
+                </select>
+            </div>
+        </div>
+        <!-- ── Valid Categories ── -->
+        <!-- Which member categories can this calculation run for? From DtoR spec section 1. -->
+        <div class="form-group">
+            <label class="form-label">Valid Categories</label>
+            <textarea class="form-textarea" placeholder="e.g. CAT_A, CAT_B, CAT_C — one per line or comma-separated" oninput="state.validCategories=this.value; updateOrderPanel()" style="min-height:60px">${esc(state.validCategories)}</textarea>
+            <div class="form-hint">Which scheme categories can this calculation run for? The coder uses these for the first validation check.</div>
+        </div>
+        ${stepNav(0)}`;
+}
+
+// ── STEP 1: Calc Type ──
+function renderStep1(el) {
+    let cards = '';
+    MODULE_LIBRARY.calcTypes.forEach(t => {
+        const selected = state.calcType === t.id;
+        cards += `<div class="selection-card${selected ? ' selected' : ''}" onclick="selectCalcType('${t.id}')">
+            <div class="card-name">${t.name}</div>
+            <div class="card-desc">${t.description}</div>
+            <div class="card-detail">${t.whyItMatters}</div>
+        </div>`;
+    });
+    el.innerHTML = `
+        <div class="step-title">Choose Your Calculation Type</div>
+        <div class="step-subtitle">What kind of calculation does this scheme need? Pick the "main course".</div>
+        <div class="card-grid">${cards}</div>
+        ${stepNav(1)}`;
+}
+
+function selectCalcType(id) {
+    state.calcType = id;
+    renderStep(); renderStepIndicator(); updateOrderPanel();
+}
+
+// ── STEP 2: Service Tranches ──
+function renderStep2(el) {
+    let html = `
+        <div class="step-title">Service Tranches</div>
+        <div class="step-subtitle">Define the tranches of service. Each tranche has its own benefit rules, revaluation, and retirement factors. The element keys come from the data migration team.</div>
+        <div class="tranche-list">`;
+
+    state.tranches.forEach((t, idx) => {
+        const summary = buildTrancheSummary(t);
+        html += `
+        <div class="tranche-card">
+            <div class="tranche-header" onclick="toggleTrancheOpen(${idx})">
+                <div class="tranche-header-left">
+                    <div class="tranche-number">${idx + 1}</div>
+                    <div>
+                        <div class="tranche-title">${esc(t.name) || 'Untitled tranche'}</div>
+                        <div class="tranche-summary">${summary}</div>
+                    </div>
+                </div>
+                <div class="tranche-header-actions">
+                    <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); removeTranche(${idx})" title="Delete tranche">&#10005;</button>
+                </div>
+            </div>
+            <div class="tranche-body${t.open ? ' open' : ''}">
+                <div class="tranche-row">
+                    <div class="form-group">
+                        <label class="form-label">Tranche Name</label>
+                        <input class="form-input" value="${esc(t.name)}" placeholder="e.g. Pre-2009 service" oninput="updateTranche(${idx},'name',this.value)">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Normal Pension Age</label>
+                        <input class="form-input" type="number" min="55" max="75" value="${t.npa}" oninput="updateTranche(${idx},'npa',this.value)">
+                    </div>
+                </div>
+                <div class="tranche-row">
+                    <div class="form-group">
+                        <label class="form-label">Period From</label>
+                        <input class="form-input" type="date" value="${t.periodFrom}" oninput="updateTranche(${idx},'periodFrom',this.value)">
+                        <div class="form-hint">Start of this tranche's service period</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Period To</label>
+                        <input class="form-input" type="date" value="${t.periodTo}" oninput="updateTranche(${idx},'periodTo',this.value)">
+                        <div class="form-hint">End of this tranche (or leave blank for ongoing)</div>
+                    </div>
+                </div>
+                <div class="tranche-row">
+                    <div class="form-group">
+                        <label class="form-label">Benefit Type</label>
+                        <select class="form-select" onchange="updateTranche(${idx},'benefitType',this.value)">
+                            ${MODULE_LIBRARY.benefitTypes.map(b =>
+                                `<option value="${b.id}" ${t.benefitType === b.id ? 'selected' : ''}>${b.name}</option>`
+                            ).join('')}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Accrual Rate</label>
+                        <select class="form-select" onchange="updateTranche(${idx},'accrualRate',this.value)">
+                            ${MODULE_LIBRARY.accrualRates.map(a =>
+                                `<option value="${a.id}" ${t.accrualRate === a.id ? 'selected' : ''}>${a.name}</option>`
+                            ).join('')}
+                        </select>
+                    </div>
+                </div>
+                <div class="tranche-row">
+                    <div class="form-group">
+                        <label class="form-label">Revaluation Method</label>
+                        <select class="form-select" onchange="updateTranche(${idx},'revaluation',this.value)">
+                            ${MODULE_LIBRARY.revaluationMethods.map(r =>
+                                `<option value="${r.id}" ${t.revaluation === r.id ? 'selected' : ''}>${r.name}</option>`
+                            ).join('')}
+                        </select>
+                        <div class="form-hint">${(MODULE_LIBRARY.revaluationMethods.find(r => r.id === t.revaluation) || {}).whyItMatters || ''}</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Retirement Factor</label>
+                        <select class="form-select" onchange="updateTranche(${idx},'retirementFactor',this.value)">
+                            ${MODULE_LIBRARY.retirementFactorTypes.map(f =>
+                                `<option value="${f.id}" ${t.retirementFactor === f.id ? 'selected' : ''}>${f.name}</option>`
+                            ).join('')}
+                        </select>
+                    </div>
+                </div>
+                <!-- ── AFR Rate ── -->
+                <!-- Assumed Future Revaluation rate for this tranche. Used when reval is s52 or s101. -->
+                ${(t.revaluation === 's52' || t.revaluation === 's101') ? `
+                <div class="form-group">
+                    <label class="form-label">AFR Rate (Assumed Future Revaluation)</label>
+                    <input class="form-input" value="${esc(t.afrRate)}" placeholder="e.g. 1.03 for 3%" oninput="updateTranche(${idx},'afrRate',this.value)">
+                    <div class="form-hint">The rate used for revaluation years beyond the latest published factors. Set by the scheme actuary. Entered in Calculate under Factors > Decimal Reference Values.</div>
+                </div>` : ''}
+                <!-- ── Factor Table Keys & Upload Status ── -->
+                <!-- These tell the coder which factor tables to use and whether they've been uploaded. -->
+                ${t.retirementFactor !== 'none' ? `
+                <div class="tranche-row">
+                    <div class="form-group">
+                        <label class="form-label">ERF Table Key in Calculate</label>
+                        <input class="form-input" value="${esc(t.erfTableKey)}" placeholder="e.g. ERF1" oninput="updateTranche(${idx},'erfTableKey',this.value)">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">ERF Upload Status</label>
+                        <select class="form-select" onchange="updateTranche(${idx},'erfUploadStatus',this.value)">
+                            <option value="tbc" ${t.erfUploadStatus==='tbc'?'selected':''}>TBC</option>
+                            <option value="yes" ${t.erfUploadStatus==='yes'?'selected':''}>Yes - Uploaded</option>
+                            <option value="no" ${t.erfUploadStatus==='no'?'selected':''}>No - Not yet</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="tranche-row">
+                    <div class="form-group">
+                        <label class="form-label">LRF Table Key in Calculate</label>
+                        <input class="form-input" value="${esc(t.lrfTableKey)}" placeholder="e.g. LRF1" oninput="updateTranche(${idx},'lrfTableKey',this.value)">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">LRF Upload Status</label>
+                        <select class="form-select" onchange="updateTranche(${idx},'lrfUploadStatus',this.value)">
+                            <option value="tbc" ${t.lrfUploadStatus==='tbc'?'selected':''}>TBC</option>
+                            <option value="yes" ${t.lrfUploadStatus==='yes'?'selected':''}>Yes - Uploaded</option>
+                            <option value="no" ${t.lrfUploadStatus==='no'?'selected':''}>No - Not yet</option>
+                        </select>
+                    </div>
+                </div>` : ''}
+                <div class="tranche-toggle">
+                    <input type="checkbox" id="gmp_${idx}" ${t.hasGMP ? 'checked' : ''} onchange="updateTranche(${idx},'hasGMP',this.checked)">
+                    <label for="gmp_${idx}">This tranche includes GMP</label>
+                    <span class="hint">(Guaranteed Minimum Pension)</span>
+                </div>
+                ${t.hasGMP ? `
+                <div class="form-group" style="margin-top:8px">
+                    <label class="form-label">GMP Revaluation Method</label>
+                    <select class="form-select" onchange="updateTranche(${idx},'gmpReval',this.value)">
+                        ${MODULE_LIBRARY.gmpRevalMethods.map(g =>
+                            `<option value="${g.id}" ${t.gmpReval === g.id ? 'selected' : ''}>${g.name}</option>`
+                        ).join('')}
+                    </select>
+                </div>` : ''}
+                <div class="form-group" style="margin-top:12px">
+                    <label class="form-label">Element Keys <span style="font-weight:400;color:var(--xps-text-muted)">(from data migration)</span></label>
+                    <textarea class="element-keys-area" placeholder="e.g. DEF_PRE09, DEF_PRE09_GMP_PRE88, DEF_PRE09_GMP_POST88" oninput="updateTranche(${idx},'elementKeys',this.value)">${esc(t.elementKeys)}</textarea>
+                    <div class="form-hint">Enter the element key names, comma-separated. These are the keys the coder will use in Calculate.</div>
+                </div>
+                <!-- ── Element Roll-up ── -->
+                <!-- How deferred elements group into pension elements for commutation. DtoR spec section 5. -->
+                <div class="form-group">
+                    <label class="form-label">Element Roll-up <span style="font-weight:400;color:var(--xps-text-muted)">(how elements group for commutation)</span></label>
+                    <textarea class="form-textarea" placeholder="e.g. DEF_PRE09 + DEF_PRE09_GMP_PRE88 + DEF_PRE09_GMP_POST88 => PRE09 pension element" oninput="updateTranche(${idx},'elementRollup',this.value)" style="min-height:50px">${esc(t.elementRollup)}</textarea>
+                    <div class="form-hint">Describe how deferred element keys combine into pension elements. The pension element name is what appears in the commutation step.</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Tranche Notes</label>
+                    <textarea class="form-textarea" placeholder="Anything specific to this tranche..." oninput="updateTranche(${idx},'notes',this.value)" style="min-height:50px">${esc(t.notes)}</textarea>
+                </div>
+            </div>
+        </div>`;
+    });
+
+    html += `</div>
+        <button class="add-tranche-btn" onclick="addTranche()" style="margin-top:16px">+ Add Service Tranche</button>
+        ${stepNav(2)}`;
+    el.innerHTML = html;
+}
+
+function buildTrancheSummary(t) {
+    const parts = [];
+    const bt = MODULE_LIBRARY.benefitTypes.find(b => b.id === t.benefitType);
+    const ar = MODULE_LIBRARY.accrualRates.find(a => a.id === t.accrualRate);
+    const rv = MODULE_LIBRARY.revaluationMethods.find(r => r.id === t.revaluation);
+    if (bt) parts.push(bt.name);
+    if (ar) parts.push(ar.name);
+    if (rv) parts.push(rv.name);
+    if (t.hasGMP) parts.push('GMP');
+    if (t.npa) parts.push('NPA ' + t.npa);
+    return parts.join(' | ') || 'Not configured';
+}
+
+function addTranche() {
+    // Close all existing tranches
+    state.tranches.forEach(t => t.open = false);
+    state.tranches.push(newTranche());
+    renderStep(); renderStepIndicator(); updateOrderPanel();
+}
+
+function removeTranche(idx) {
+    if (state.tranches.length <= 1) {
+        if (!confirm('Remove the last tranche?')) return;
+    }
+    state.tranches.splice(idx, 1);
+    renderStep(); renderStepIndicator(); updateOrderPanel();
+}
+
+function toggleTrancheOpen(idx) {
+    state.tranches[idx].open = !state.tranches[idx].open;
+    renderStep();
+}
+
+function updateTranche(idx, key, value) {
+    state.tranches[idx][key] = value;
+    renderStepIndicator();
+    updateOrderPanel();
+}
+
+// ── STEP 3: GMP & Special Rules ──
+// This step captures GMP handling options plus detailed GMP settings.
+// To add a new GMP setting: add a form-group in the "GMP Settings" section below, add the state key to the state object, and include it in review/export.
+function renderStep3(el) {
+    const items = MODULE_LIBRARY.gmpHandling;
+    let html = `
+        <div class="step-title">GMP & Special Rules</div>
+        <div class="step-subtitle">How should GMP be handled? These are the trickiest parts of pension calculations.</div>`;
+
+    // ── GMP Detailed Settings ──
+    // These fields come from DtoR spec section 3. They capture the technical GMP parameters.
+    html += `<div class="category-label">GMP Settings</div>
+        <div class="tranche-row">
+            <div class="form-group">
+                <label class="form-label">GMP Pension Increase Date — Month</label>
+                <select class="form-select" onchange="state.gmpIncreaseMonth=this.value; updateOrderPanel()">
+                    ${['1','2','3','4','5','6','7','8','9','10','11','12'].map(m =>
+                        `<option value="${m}" ${state.gmpIncreaseMonth===m?'selected':''}>${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m-1]}</option>`
+                    ).join('')}
+                </select>
+                <div class="form-hint">Usually April (4)</div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">GMP Pension Increase Date — Day</label>
+                <input class="form-input" type="number" min="1" max="31" value="${state.gmpIncreaseDay}" oninput="state.gmpIncreaseDay=this.value; updateOrderPanel()">
+                <div class="form-hint">Usually 1st</div>
+            </div>
+        </div>
+        <div class="tranche-row">
+            <div class="form-group">
+                <label class="form-label">s109 Assumption (Future GMP Uplift)</label>
+                <input class="form-input" value="${esc(state.s109Rate)}" placeholder="e.g. 1.03 for 3%" oninput="state.s109Rate=this.value; updateOrderPanel()">
+                <div class="form-hint">The assumed future GMP increase rate, used for years beyond the latest published orders.</div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">GMP Retirement Factor Rule</label>
+                <select class="form-select" onchange="state.gmpRetFactorRule=this.value; updateOrderPanel()">
+                    <option value="no_erf" ${state.gmpRetFactorRule==='no_erf'?'selected':''}>No ERF/LRF after GMP age (factor = 1.0)</option>
+                    <option value="apply_erf" ${state.gmpRetFactorRule==='apply_erf'?'selected':''}>Apply ERF/LRF even after GMP age</option>
+                </select>
+                <div class="form-hint">When a member retires after GMP age, does the ERF/LRF still apply to GMP elements?</div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">POST88 GMP Element Keys</label>
+            <textarea class="element-keys-area" placeholder="e.g. DEF_PRE09_GMP_POST88, DEF_POST09_GMP_POST88" oninput="state.post88GmpElementKeys=this.value; updateOrderPanel()">${esc(state.post88GmpElementKeys)}</textarea>
+            <div class="form-hint">List all element keys that should receive GMP missed increases (i.e. the POST88 GMP keys). Comma-separated.</div>
+        </div>`;
+
+    html += `<div class="category-label" style="margin-top:24px">GMP Handling Options</div>`;
+
+    items.forEach(item => {
+        const selected = state.gmpOptions[item.id] !== undefined;
+        let cls = 'selection-card';
+        if (selected) cls += ' selected';
+        html += `<div class="${cls}" onclick="toggleGmpOption('${item.id}')" style="margin-bottom:14px">
+            <div class="card-name">${item.name}
+                <span class="complexity-badge complexity-${item.complexity}">${item.complexity}</span>
+            </div>
+            <div class="card-desc">${item.description}</div>
+            <div class="card-detail">${item.whyItMatters}</div>`;
+        if (item.methods) {
+            html += `<div class="option-group" onclick="event.stopPropagation()">`;
+            item.methods.forEach(m => {
+                html += `<label>
+                    <input type="radio" name="${item.id}" value="${m.id}" ${state.gmpOptions[item.id] === m.id ? 'checked' : ''} onchange="setGmpSubOption('${item.id}','${m.id}')">
+                    <span><strong>${m.name}</strong> &mdash; ${m.description}</span>
+                </label>`;
+            });
+            html += '</div>';
+        }
+        if (item.options) {
+            html += `<div class="option-group" onclick="event.stopPropagation()">`;
+            item.options.forEach(o => {
+                html += `<label>
+                    <input type="radio" name="${item.id}" value="${o.id}" ${state.gmpOptions[item.id] === o.id ? 'checked' : ''} onchange="setGmpSubOption('${item.id}','${o.id}')">
+                    <span><strong>${o.name}</strong> &mdash; ${o.description}</span>
+                </label>`;
+            });
+            html += '</div>';
+        }
+        html += '</div>';
+    });
+    html += stepNav(3);
+    el.innerHTML = html;
+}
+
+function toggleGmpOption(id) {
+    if (state.gmpOptions[id] !== undefined) delete state.gmpOptions[id];
+    else state.gmpOptions[id] = true;
+    renderStep(); renderStepIndicator(); updateOrderPanel();
+}
+
+function setGmpSubOption(parentId, optionId) {
+    state.gmpOptions[parentId] = optionId;
+    renderStepIndicator(); updateOrderPanel();
+}
+
+// ── STEP 4: Commutation ──
+// This step captures how pension is exchanged for cash.
+// To add a new commutation setting: add a form-group in the "Commutation Settings" section, add the state key, and include it in review/export.
+function renderStep4(el) {
+    let html = `
+        <div class="step-title">Commutation / PCLS</div>
+        <div class="step-subtitle">How does the member exchange pension for a tax-free lump sum?</div>`;
+
+    // Style
+    html += `<div class="category-label">Commutation Style</div><div class="card-grid">`;
+    MODULE_LIBRARY.commutationStyles.forEach(s => {
+        const selected = state.commutationStyle === s.id;
+        html += `<div class="selection-card${selected ? ' selected' : ''}" onclick="state.commutationStyle='${s.id}'; renderStep(); renderStepIndicator(); updateOrderPanel();">
+            <div class="card-name">${s.name}</div>
+            <div class="card-desc">${s.description}</div>
+            <div class="card-detail">${s.whyItMatters}</div>
+        </div>`;
+    });
+    html += '</div>';
+
+    // Factor source
+    html += `<div class="category-label">Commutation Factor Source</div><div class="card-grid">`;
+    MODULE_LIBRARY.commutationFactorSources.forEach(f => {
+        const selected = state.commutationFactorSource === f.id;
+        html += `<div class="selection-card${selected ? ' selected' : ''}" onclick="state.commutationFactorSource='${f.id}'; renderStep(); renderStepIndicator(); updateOrderPanel();">
+            <div class="card-name">${f.name}</div>
+            <div class="card-desc">${f.description}</div>
+        </div>`;
+    });
+    html += '</div>';
+
+    // Ordered commutation order
+    if (state.commutationStyle === 'ordered') {
+        html += `<div class="form-group" style="margin-top:20px">
+            <label class="form-label">Commutation Order</label>
+            <textarea class="form-textarea" placeholder="List the element/tranche order, e.g.:\n1. Pre-2009 excess\n2. Post-2009 pension\n3. Pre-2009 pension" oninput="state.commutationOrder=this.value; updateOrderPanel()" style="min-height:80px">${esc(state.commutationOrder)}</textarea>
+            <div class="form-hint">Elements are fully commuted in this order before moving to the next.</div>
+        </div>`;
+    }
+
+    // ── Commutation Settings ──
+    // These fields come from DtoR spec section 6. To add a new setting, copy a form-group block.
+    html += `<div class="category-label" style="margin-top:24px">Commutation Settings</div>
+        <div class="tranche-row">
+            <div class="form-group">
+                <label class="form-label">Spouse Pension %</label>
+                <input class="form-input" value="${esc(state.spousePensionPct)}" placeholder="e.g. 50" oninput="state.spousePensionPct=this.value; updateOrderPanel()">
+                <div class="form-hint">Default is 50%. Some schemes use 66.67% or other rates.</div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Spouse GMP Minimum Option</label>
+                <select class="form-select" onchange="state.spouseGmpMinimum=this.value; updateOrderPanel()">
+                    <option value="50_all" ${state.spouseGmpMinimum==='50_all'?'selected':''}>50% of all GMP</option>
+                    <option value="nil_pre88" ${state.spouseGmpMinimum==='nil_pre88'?'selected':''}>Nil Pre-88 GMP</option>
+                </select>
+                <div class="form-hint">The minimum spouse pension payable in respect of GMP.</div>
+            </div>
+        </div>
+        <div class="tranche-row">
+            <div class="form-group">
+                <label class="form-label">DC Fund Included in Cash?</label>
+                <select class="form-select" onchange="state.dcFundInCash=this.value; updateOrderPanel()">
+                    <option value="no" ${state.dcFundInCash==='no'?'selected':''}>No</option>
+                    <option value="yes" ${state.dcFundInCash==='yes'?'selected':''}>Yes</option>
+                </select>
+                <div class="form-hint">Are external DC fund values added to the total cash calculation?</div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Rounding (Decimal Places)</label>
+                <input class="form-input" type="number" min="0" max="6" value="${state.commutationRounding}" oninput="state.commutationRounding=this.value; updateOrderPanel()">
+                <div class="form-hint">Number of decimal places for rounding commutation results. Default is 2.</div>
+            </div>
+        </div>
+        <div class="tranche-row">
+            <div class="form-group">
+                <label class="form-label">Commutation Factor Table Key</label>
+                <input class="form-input" value="${esc(state.commutationFactorTableKey)}" placeholder="e.g. CF1" oninput="state.commutationFactorTableKey=this.value; updateOrderPanel()">
+                <div class="form-hint">The factor table key in Calculate for commutation factors.</div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Commutation Factors Uploaded?</label>
+                <select class="form-select" onchange="state.commutationFactorUploaded=this.value; updateOrderPanel()">
+                    <option value="tbc" ${state.commutationFactorUploaded==='tbc'?'selected':''}>TBC</option>
+                    <option value="yes" ${state.commutationFactorUploaded==='yes'?'selected':''}>Yes - Uploaded</option>
+                    <option value="no" ${state.commutationFactorUploaded==='no'?'selected':''}>No - Not yet</option>
+                </select>
+            </div>
+        </div>`;
+
+    // Notes
+    html += `<div class="form-group" style="margin-top:20px">
+        <label class="form-label">Commutation Notes</label>
+        <textarea class="form-textarea" placeholder="Any other special commutation rules? e.g. PIE, bespoke DC fund handling, different commutation factors by age..." oninput="state.commutationNotes=this.value; updateOrderPanel()" style="min-height:60px">${esc(state.commutationNotes)}</textarea>
+    </div>`;
+
+    html += stepNav(4);
+    el.innerHTML = html;
+}
+
+// ── STEP 5: Validations & Dependencies ──
+function renderStep5(el) {
+    let html = `
+        <div class="step-title">Validations & Dependencies</div>
+        <div class="step-subtitle">What checks should the calculation perform, and what does the coder need to set up?</div>`;
+
+    html += `<div class="category-label">Pre-Calculation Checks (errors &mdash; stop the calc)</div><div class="checkbox-list">`;
+    MODULE_LIBRARY.validations.preCalc.forEach(v => {
+        const checked = state.validationsPreCalc.includes(v.id);
+        html += checkboxItem(v, checked, 'validationsPreCalc');
+    });
+    html += '</div>';
+
+    html += `<div class="category-label" style="margin-top:24px">Post-Calculation Checks (warnings &mdash; calc still runs)</div><div class="checkbox-list">`;
+    MODULE_LIBRARY.validations.postCalc.forEach(v => {
+        const checked = state.validationsPostCalc.includes(v.id);
+        html += checkboxItem(v, checked, 'validationsPostCalc');
+    });
+    html += '</div>';
+
+    html += `<div class="category-label" style="margin-top:24px">Setup Dependencies (for the coder)</div><div class="checkbox-list">`;
+    MODULE_LIBRARY.dependencies.forEach(d => {
+        const checked = state.dependencies.includes(d.id);
+        html += `<div class="checkbox-item${checked ? ' checked' : ''}" onclick="toggleCheckbox('dependencies','${d.id}')">
+            <input type="checkbox" ${checked ? 'checked' : ''} onclick="event.stopPropagation(); toggleCheckbox('dependencies','${d.id}')">
+            <div class="checkbox-item-text">
+                <div class="checkbox-item-name">${d.name}
+                    <span style="font-size:0.65rem;color:var(--xps-text-muted);font-weight:400;margin-left:6px">${d.category}</span>
+                </div>
+                <div class="checkbox-item-desc">${d.description}</div>
+            </div>
+        </div>`;
+    });
+    html += '</div>';
+
+    html += `<div class="category-label" style="margin-top:24px">Additional Notes</div>
+        <textarea class="form-textarea" placeholder="Anything else the dev team should know? Scheme quirks, known issues, special rules..." oninput="state.notes=this.value; updateOrderPanel()">${esc(state.notes)}</textarea>`;
+
+    html += stepNav(5);
+    el.innerHTML = html;
+}
+
+function checkboxItem(v, checked, stateKey) {
+    return `<div class="checkbox-item${checked ? ' checked' : ''}" onclick="toggleCheckbox('${stateKey}','${v.id}')">
+        <input type="checkbox" ${checked ? 'checked' : ''} onclick="event.stopPropagation(); toggleCheckbox('${stateKey}','${v.id}')">
+        <div class="checkbox-item-text">
+            <div class="checkbox-item-name">${v.name}${v.isStandard ? '<span class="standard-badge">Standard</span>' : ''}</div>
+            <div class="checkbox-item-desc">${v.description}</div>
+        </div>
+    </div>`;
+}
+
+function toggleCheckbox(key, id) {
+    const arr = state[key];
+    const idx = arr.indexOf(id);
+    if (idx >= 0) arr.splice(idx, 1);
+    else arr.push(id);
+    renderStep(); renderStepIndicator(); updateOrderPanel();
+}
+
+// ── STEP 6: Review & Export ──
+// This step shows the full review, sign-off fields, and export buttons.
+// To add a new sign-off role: copy one of the name/date pairs below, add state keys, and include in review/export.
+function renderStep6(el) {
+    el.innerHTML = `
+        <div class="step-title">Review Your Spec</div>
+        <div class="step-subtitle">Here's your complete order sheet. Review it, then export or print.</div>
+        <div class="review-sheet" id="reviewSheet">${buildReviewHTML()}</div>
+
+        <!-- ── Sign-Off ── -->
+        <!-- From DtoR spec section 10. Captures who has signed off on this spec. -->
+        <div style="margin-top:24px">
+            <div class="category-label">Sign-Off</div>
+            <div class="tranche-row">
+                <div class="form-group">
+                    <label class="form-label">Analyst Name</label>
+                    <input class="form-input" value="${esc(state.analystName)}" placeholder="Analyst name" oninput="state.analystName=this.value">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Analyst Date</label>
+                    <input class="form-input" type="date" value="${state.analystDate}" oninput="state.analystDate=this.value">
+                </div>
+            </div>
+            <div class="tranche-row">
+                <div class="form-group">
+                    <label class="form-label">Coder Name</label>
+                    <input class="form-input" value="${esc(state.coderName)}" placeholder="Coder name" oninput="state.coderName=this.value">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Coder Date</label>
+                    <input class="form-input" type="date" value="${state.coderDate}" oninput="state.coderDate=this.value">
+                </div>
+            </div>
+            <div class="tranche-row">
+                <div class="form-group">
+                    <label class="form-label">Reviewer Name</label>
+                    <input class="form-input" value="${esc(state.reviewerName)}" placeholder="Reviewer name" oninput="state.reviewerName=this.value">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Reviewer Date</label>
+                    <input class="form-input" type="date" value="${state.reviewerDate}" oninput="state.reviewerDate=this.value">
+                </div>
+            </div>
+        </div>
+
+        <div class="export-bar">
+            <button class="btn btn-primary" onclick="exportText()">&#128196; Export as Text</button>
+            <button class="btn btn-primary" onclick="exportPDF()">&#128195; Export as PDF</button>
+            <button class="btn btn-secondary" onclick="window.print()">&#128424; Print</button>
+            <button class="btn btn-success" onclick="saveSpec()">&#128190; Save Spec</button>
+        </div>
+        <div class="step-nav">
+            <button class="btn btn-secondary" onclick="returnFromReview()">&#8592; Back to editing</button>
+        </div>`;
+}
+
+function buildReviewHTML() {
+    const ct = getSelectedCalcType();
+    let html = '';
+    const statusLabels = { draft: 'Draft', review: 'Review', approved: 'Approved' };
+
+    // Scheme info
+    html += `<div class="review-section">
+        <div class="review-section-title">Scheme Information</div>
+        <div class="review-item"><span class="review-item-label">Scheme</span><span class="review-item-value">${esc(state.schemeName) || 'Not set'}</span></div>
+        <div class="review-item"><span class="review-item-label">Requester</span><span class="review-item-value">${esc(state.requesterName) || 'Not set'}</span></div>
+        <div class="review-item"><span class="review-item-label">Date</span><span class="review-item-value">${state.specDate}</span></div>
+        <div class="review-item"><span class="review-item-label">Version</span><span class="review-item-value">${esc(state.specVersion)}</span></div>
+        <div class="review-item"><span class="review-item-label">Status</span><span class="review-item-value">${statusLabels[state.specStatus] || state.specStatus}</span></div>
+        ${state.validCategories.trim() ? `<div class="review-item"><span class="review-item-label">Valid Categories</span><span class="review-item-value" style="font-family:monospace;font-size:0.8rem">${esc(state.validCategories)}</span></div>` : ''}
+    </div>`;
+
+    // Calc type
+    html += `<div class="review-section">
+        <div class="review-section-title">Calculation Type</div>
+        <div class="review-item"><span class="review-item-label">Type</span><span class="review-item-value">${ct ? ct.name : 'Not selected'}</span></div>
+    </div>`;
+
+    // Tranches
+    html += `<div class="review-section">
+        <div class="review-section-title">Service Tranches (${state.tranches.length})</div>`;
+    if (state.tranches.length === 0) {
+        html += '<p style="color:var(--xps-text-muted);font-style:italic;font-size:0.85rem">No tranches defined</p>';
+    }
+    state.tranches.forEach((t, idx) => {
+        const bt = MODULE_LIBRARY.benefitTypes.find(b => b.id === t.benefitType);
+        const ar = MODULE_LIBRARY.accrualRates.find(a => a.id === t.accrualRate);
+        const rv = MODULE_LIBRARY.revaluationMethods.find(r => r.id === t.revaluation);
+        const rf = MODULE_LIBRARY.retirementFactorTypes.find(f => f.id === t.retirementFactor);
+        const gr = t.hasGMP ? MODULE_LIBRARY.gmpRevalMethods.find(g => g.id === t.gmpReval) : null;
+        const uploadLabel = { yes: 'Uploaded', no: 'Not yet', tbc: 'TBC' };
+        html += `<div class="review-tranche">
+            <div class="review-tranche-name">${idx + 1}. ${esc(t.name) || 'Untitled'}</div>
+            <div class="review-item"><span class="review-item-label">Period</span><span class="review-item-value">${t.periodFrom || '?'} to ${t.periodTo || 'ongoing'}</span></div>
+            <div class="review-item"><span class="review-item-label">NPA</span><span class="review-item-value">${t.npa}</span></div>
+            <div class="review-item"><span class="review-item-label">Benefit Type</span><span class="review-item-value">${bt ? bt.name : '?'}</span></div>
+            <div class="review-item"><span class="review-item-label">Accrual</span><span class="review-item-value">${ar ? ar.name : '?'}</span></div>
+            <div class="review-item"><span class="review-item-label">Revaluation</span><span class="review-item-value">${rv ? rv.name : '?'}</span></div>
+            ${t.afrRate ? `<div class="review-item"><span class="review-item-label">AFR Rate</span><span class="review-item-value">${esc(t.afrRate)}</span></div>` : ''}
+            <div class="review-item"><span class="review-item-label">Retirement Factor</span><span class="review-item-value">${rf ? rf.name : '?'}</span></div>
+            ${t.erfTableKey ? `<div class="review-item"><span class="review-item-label">ERF Table</span><span class="review-item-value" style="font-family:monospace">${esc(t.erfTableKey)} (${uploadLabel[t.erfUploadStatus] || 'TBC'})</span></div>` : ''}
+            ${t.lrfTableKey ? `<div class="review-item"><span class="review-item-label">LRF Table</span><span class="review-item-value" style="font-family:monospace">${esc(t.lrfTableKey)} (${uploadLabel[t.lrfUploadStatus] || 'TBC'})</span></div>` : ''}
+            ${t.hasGMP ? `<div class="review-item"><span class="review-item-label">GMP</span><span class="review-item-value">Yes — ${gr ? gr.name : '?'}</span></div>` : ''}
+            ${t.elementKeys.trim() ? `<div class="review-item"><span class="review-item-label">Element Keys</span><span class="review-item-value" style="font-family:monospace;font-size:0.8rem">${esc(t.elementKeys)}</span></div>` : ''}
+            ${t.elementRollup.trim() ? `<div class="review-item"><span class="review-item-label">Element Roll-up</span><span class="review-item-value" style="text-align:left;font-size:0.8rem">${esc(t.elementRollup)}</span></div>` : ''}
+            ${t.notes.trim() ? `<div class="review-item"><span class="review-item-label">Notes</span><span class="review-item-value" style="text-align:left">${esc(t.notes)}</span></div>` : ''}
+        </div>`;
+    });
+    html += '</div>';
+
+    // GMP
+    if (hasGMP()) {
+        const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        const gmpRetRuleLabel = state.gmpRetFactorRule === 'apply_erf' ? 'Apply ERF/LRF after GMP age' : 'No ERF/LRF after GMP age (1.0)';
+        html += `<div class="review-section">
+            <div class="review-section-title">GMP & Special Rules</div>
+            <div class="review-item"><span class="review-item-label">GMP Increase Date</span><span class="review-item-value">${state.gmpIncreaseDay} ${monthNames[(parseInt(state.gmpIncreaseMonth)||4)-1]}</span></div>
+            ${state.s109Rate ? `<div class="review-item"><span class="review-item-label">s109 Assumption</span><span class="review-item-value">${esc(state.s109Rate)}</span></div>` : ''}
+            <div class="review-item"><span class="review-item-label">GMP Ret. Factor Rule</span><span class="review-item-value">${gmpRetRuleLabel}</span></div>
+            ${state.post88GmpElementKeys.trim() ? `<div class="review-item"><span class="review-item-label">POST88 GMP Keys</span><span class="review-item-value" style="font-family:monospace;font-size:0.8rem">${esc(state.post88GmpElementKeys)}</span></div>` : ''}`;
+        if (Object.keys(state.gmpOptions).length > 0) {
+            html += `<ul class="review-list" style="margin-top:8px">`;
+            Object.entries(state.gmpOptions).forEach(([key, val]) => {
+                const item = MODULE_LIBRARY.gmpHandling.find(g => g.id === key);
+                if (item) {
+                    let detail = '';
+                    if (val !== true) {
+                        const sub = (item.methods || item.options || []).find(m => m.id === val);
+                        if (sub) detail = ` — ${sub.name}`;
+                    }
+                    html += `<li>${item.name}${detail}</li>`;
+                }
+            });
+            html += '</ul>';
+        }
+        html += '</div>';
+    }
+
+    // Commutation
+    if (state.commutationStyle) {
+        const cs = MODULE_LIBRARY.commutationStyles.find(s => s.id === state.commutationStyle);
+        const cfs = state.commutationFactorSource ? MODULE_LIBRARY.commutationFactorSources.find(f => f.id === state.commutationFactorSource) : null;
+        const spouseGmpLabel = state.spouseGmpMinimum === 'nil_pre88' ? 'Nil Pre-88 GMP' : '50% of all GMP';
+        const cfUploadLabel = { yes: 'Uploaded', no: 'Not yet', tbc: 'TBC' };
+        html += `<div class="review-section">
+            <div class="review-section-title">Commutation / PCLS</div>
+            <div class="review-item"><span class="review-item-label">Style</span><span class="review-item-value">${cs ? cs.name : '?'}</span></div>
+            ${cfs ? `<div class="review-item"><span class="review-item-label">Factor Source</span><span class="review-item-value">${cfs.name}</span></div>` : ''}
+            ${state.commutationFactorTableKey ? `<div class="review-item"><span class="review-item-label">Factor Table Key</span><span class="review-item-value" style="font-family:monospace">${esc(state.commutationFactorTableKey)} (${cfUploadLabel[state.commutationFactorUploaded] || 'TBC'})</span></div>` : ''}
+            <div class="review-item"><span class="review-item-label">Spouse Pension %</span><span class="review-item-value">${esc(state.spousePensionPct)}%</span></div>
+            <div class="review-item"><span class="review-item-label">Spouse GMP Minimum</span><span class="review-item-value">${spouseGmpLabel}</span></div>
+            <div class="review-item"><span class="review-item-label">DC Fund in Cash?</span><span class="review-item-value">${state.dcFundInCash === 'yes' ? 'Yes' : 'No'}</span></div>
+            <div class="review-item"><span class="review-item-label">Rounding</span><span class="review-item-value">${state.commutationRounding} dp</span></div>
+            ${state.commutationOrder.trim() ? `<div class="review-item"><span class="review-item-label">Order</span><span class="review-item-value" style="text-align:left;white-space:pre-line">${esc(state.commutationOrder)}</span></div>` : ''}
+            ${state.commutationNotes.trim() ? `<div class="review-item"><span class="review-item-label">Notes</span><span class="review-item-value" style="text-align:left">${esc(state.commutationNotes)}</span></div>` : ''}
+        </div>`;
+    }
+
+    // Validations
+    const allVals = [...state.validationsPreCalc, ...state.validationsPostCalc];
+    html += `<div class="review-section">
+        <div class="review-section-title">Validations</div>
+        <ul class="review-list">`;
+    if (allVals.length === 0) html += '<li style="color:var(--xps-text-muted);font-style:italic">None selected</li>';
+    state.validationsPreCalc.forEach(vid => {
+        const v = MODULE_LIBRARY.validations.preCalc.find(x => x.id === vid);
+        if (v) html += `<li>${v.name} <span style="color:var(--xps-danger)">(Error)</span></li>`;
+    });
+    state.validationsPostCalc.forEach(vid => {
+        const v = MODULE_LIBRARY.validations.postCalc.find(x => x.id === vid);
+        if (v) html += `<li>${v.name} <span style="color:var(--xps-warning)">(Warning)</span></li>`;
+    });
+    html += '</ul></div>';
+
+    // Dependencies
+    html += `<div class="review-section">
+        <div class="review-section-title">Dependencies & Setup</div>
+        <ul class="review-list">`;
+    if (state.dependencies.length === 0) html += '<li style="color:var(--xps-text-muted);font-style:italic">None selected</li>';
+    state.dependencies.forEach(did => {
+        const d = MODULE_LIBRARY.dependencies.find(x => x.id === did);
+        if (d) html += `<li>${d.name} <span style="color:var(--xps-text-muted)">(${d.category})</span></li>`;
+    });
+    html += '</ul></div>';
+
+    // Notes
+    if (state.notes.trim()) {
+        html += `<div class="review-section">
+            <div class="review-section-title">Additional Notes</div>
+            <div class="review-notes">${esc(state.notes)}</div>
+        </div>`;
+    }
+
+    // Sign-off
+    const hasSignOff = state.analystName || state.coderName || state.reviewerName;
+    if (hasSignOff) {
+        html += `<div class="review-section">
+            <div class="review-section-title">Sign-Off</div>
+            ${state.analystName ? `<div class="review-item"><span class="review-item-label">Analyst</span><span class="review-item-value">${esc(state.analystName)}${state.analystDate ? ' ('+state.analystDate+')' : ''}</span></div>` : ''}
+            ${state.coderName ? `<div class="review-item"><span class="review-item-label">Coder</span><span class="review-item-value">${esc(state.coderName)}${state.coderDate ? ' ('+state.coderDate+')' : ''}</span></div>` : ''}
+            ${state.reviewerName ? `<div class="review-item"><span class="review-item-label">Reviewer</span><span class="review-item-value">${esc(state.reviewerName)}${state.reviewerDate ? ' ('+state.reviewerDate+')' : ''}</span></div>` : ''}
+        </div>`;
+    }
+
+    return html;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ORDER PANEL
+// ═══════════════════════════════════════════════════════════════
+function updateOrderPanel() {
+    const body = document.getElementById('orderBody');
+    const ct = getSelectedCalcType();
+    let html = '';
+
+    html += orderSection('Scheme', state.schemeName || null);
+    if (state.requesterName) html += orderSection('Requester', state.requesterName);
+    html += '<div class="order-divider"></div>';
+    html += orderSection('Calc Type', ct ? ct.name : null);
+
+    // Tranches summary
+    if (state.tranches.length > 0) {
+        html += `<div class="order-section">
+            <div class="order-section-title">Service Tranches (${state.tranches.length})</div>
+            <div class="order-tags">`;
+        state.tranches.forEach(t => {
+            const label = t.name || 'Untitled';
+            const cls = t.hasGMP ? 'order-tag gmp' : 'order-tag';
+            html += `<span class="${cls}">${esc(label)}</span>`;
+        });
+        html += '</div></div>';
+    }
+
+    // GMP
+    if (Object.keys(state.gmpOptions).length > 0) {
+        html += `<div class="order-section">
+            <div class="order-section-title">GMP Rules</div>
+            <div class="order-tags">`;
+        Object.keys(state.gmpOptions).forEach(key => {
+            const item = MODULE_LIBRARY.gmpHandling.find(g => g.id === key);
+            if (item) html += `<span class="order-tag gmp">${item.name}</span>`;
+        });
+        html += '</div></div>';
+    }
+
+    // Commutation
+    if (state.commutationStyle) {
+        const cs = MODULE_LIBRARY.commutationStyles.find(s => s.id === state.commutationStyle);
+        html += orderSection('Commutation', cs ? cs.name : null);
+    }
+
+    // Counts
+    const valCount = state.validationsPreCalc.length + state.validationsPostCalc.length;
+    const depCount = state.dependencies.length;
+    if (valCount > 0 || depCount > 0) {
+        html += '<div class="order-divider"></div>';
+        if (valCount > 0) html += orderSection('Validations', `${valCount} check${valCount !== 1 ? 's' : ''}`);
+        if (depCount > 0) html += orderSection('Dependencies', `${depCount} item${depCount !== 1 ? 's' : ''}`);
+    }
+    if (state.notes.trim()) {
+        html += '<div class="order-divider"></div>';
+        html += orderSection('Notes', 'Included');
+    }
+
+    if (!html.trim()) html = '<p class="order-section-value empty">Start building your spec...</p>';
+    body.innerHTML = html;
+
+    const sub = document.getElementById('printSubtitle');
+    if (sub) sub.textContent = `${state.schemeName || 'Unnamed Scheme'} | ${ct ? ct.name : 'No calc type'} | ${state.specDate}`;
+}
+
+function orderSection(title, value) {
+    return `<div class="order-section">
+        <div class="order-section-title">${title}</div>
+        <div class="order-section-value${value ? '' : ' empty'}">${value || 'Not set'}</div>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// NAV
+// ═══════════════════════════════════════════════════════════════
+function stepNav(step) {
+    const isFirst = step === 0;
+    const isLast = step === STEPS.length - 1;
+    let nextStep = step + 1;
+    let prevStep = step - 1;
+    // Skip steps
+    while (nextStep < STEPS.length && isStepSkipped(nextStep)) nextStep++;
+    while (prevStep >= 0 && isStepSkipped(prevStep)) prevStep--;
+
+    return `<div class="step-nav">
+        <button class="btn btn-secondary" ${isFirst ? 'disabled' : ''} onclick="goToStep(${prevStep})">&#8592; Back</button>
+        ${isLast ? '' : `<button class="btn btn-primary" onclick="goToStep(${nextStep})">Next &#8594;</button>`}
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EXPORT
+// ═══════════════════════════════════════════════════════════════
+function exportText() {
+    const ct = getSelectedCalcType();
+    let text = '='.repeat(60) + '\n';
+    text += 'PENSION CALC SPEC SHEET\n';
+    text += '='.repeat(60) + '\n\n';
+    const statusLabels = { draft: 'Draft', review: 'Review', approved: 'Approved' };
+    text += `Scheme:     ${state.schemeName || 'Not set'}\n`;
+    text += `Requester:  ${state.requesterName || 'Not set'}\n`;
+    text += `Date:       ${state.specDate}\n`;
+    text += `Version:    ${state.specVersion}\n`;
+    text += `Status:     ${statusLabels[state.specStatus] || state.specStatus}\n`;
+    if (state.validCategories.trim()) text += `Valid Cats: ${state.validCategories}\n`;
+    text += '\n';
+
+    text += section('CALCULATION TYPE');
+    text += `${ct ? ct.name : 'Not selected'}\n`;
+    if (ct) text += `${ct.description}\n`;
+    text += '\n';
+
+    text += section('SERVICE TRANCHES');
+    if (state.tranches.length === 0) text += '  (none defined)\n';
+    state.tranches.forEach((t, idx) => {
+        const bt = MODULE_LIBRARY.benefitTypes.find(b => b.id === t.benefitType);
+        const ar = MODULE_LIBRARY.accrualRates.find(a => a.id === t.accrualRate);
+        const rv = MODULE_LIBRARY.revaluationMethods.find(r => r.id === t.revaluation);
+        const rf = MODULE_LIBRARY.retirementFactorTypes.find(f => f.id === t.retirementFactor);
+        const gr = t.hasGMP ? MODULE_LIBRARY.gmpRevalMethods.find(g => g.id === t.gmpReval) : null;
+        const uploadLabel = { yes: 'Uploaded', no: 'Not yet', tbc: 'TBC' };
+        text += `\n  Tranche ${idx + 1}: ${t.name || 'Untitled'}\n`;
+        text += `    Period:            ${t.periodFrom || '?'} to ${t.periodTo || 'ongoing'}\n`;
+        text += `    NPA:               ${t.npa}\n`;
+        text += `    Benefit Type:      ${bt ? bt.name : '?'}\n`;
+        text += `    Accrual Rate:      ${ar ? ar.name : '?'}\n`;
+        text += `    Revaluation:       ${rv ? rv.name : '?'}\n`;
+        if (t.afrRate) text += `    AFR Rate:          ${t.afrRate}\n`;
+        text += `    Retirement Factor: ${rf ? rf.name : '?'}\n`;
+        if (t.erfTableKey) text += `    ERF Table:         ${t.erfTableKey} (${uploadLabel[t.erfUploadStatus] || 'TBC'})\n`;
+        if (t.lrfTableKey) text += `    LRF Table:         ${t.lrfTableKey} (${uploadLabel[t.lrfUploadStatus] || 'TBC'})\n`;
+        if (t.hasGMP) text += `    GMP:               Yes — ${gr ? gr.name : '?'}\n`;
+        if (t.elementKeys.trim()) text += `    Element Keys:      ${t.elementKeys}\n`;
+        if (t.elementRollup.trim()) text += `    Element Roll-up:   ${t.elementRollup}\n`;
+        if (t.notes.trim()) text += `    Notes:             ${t.notes}\n`;
+    });
+    text += '\n';
+
+    if (hasGMP()) {
+        const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        const gmpRetRuleLabel = state.gmpRetFactorRule === 'apply_erf' ? 'Apply ERF/LRF after GMP age' : 'No ERF/LRF after GMP age (1.0)';
+        text += section('GMP & SPECIAL RULES');
+        text += `  GMP Increase Date:   ${state.gmpIncreaseDay} ${monthNames[(parseInt(state.gmpIncreaseMonth)||4)-1]}\n`;
+        if (state.s109Rate) text += `  s109 Assumption:     ${state.s109Rate}\n`;
+        text += `  Ret. Factor Rule:    ${gmpRetRuleLabel}\n`;
+        if (state.post88GmpElementKeys.trim()) text += `  POST88 GMP Keys:     ${state.post88GmpElementKeys}\n`;
+        if (Object.keys(state.gmpOptions).length > 0) {
+            text += '\n  Handling Options:\n';
+            Object.entries(state.gmpOptions).forEach(([key, val]) => {
+                const item = MODULE_LIBRARY.gmpHandling.find(g => g.id === key);
+                if (item) {
+                    let detail = '';
+                    if (val !== true) {
+                        const sub = (item.methods || item.options || []).find(m => m.id === val);
+                        if (sub) detail = ` -> ${sub.name}`;
+                    }
+                    text += `  - ${item.name}${detail}\n`;
+                }
+            });
+        }
+        text += '\n';
+    }
+
+    if (state.commutationStyle) {
+        const cs = MODULE_LIBRARY.commutationStyles.find(s => s.id === state.commutationStyle);
+        const cfs = state.commutationFactorSource ? MODULE_LIBRARY.commutationFactorSources.find(f => f.id === state.commutationFactorSource) : null;
+        const spouseGmpLabel = state.spouseGmpMinimum === 'nil_pre88' ? 'Nil Pre-88 GMP' : '50% of all GMP';
+        const cfUploadLabel = { yes: 'Uploaded', no: 'Not yet', tbc: 'TBC' };
+        text += section('COMMUTATION / PCLS');
+        text += `  Style:               ${cs ? cs.name : '?'}\n`;
+        if (cfs) text += `  Factor Source:       ${cfs.name}\n`;
+        if (state.commutationFactorTableKey) text += `  Factor Table Key:    ${state.commutationFactorTableKey} (${cfUploadLabel[state.commutationFactorUploaded] || 'TBC'})\n`;
+        text += `  Spouse Pension %:    ${state.spousePensionPct}%\n`;
+        text += `  Spouse GMP Minimum:  ${spouseGmpLabel}\n`;
+        text += `  DC Fund in Cash:     ${state.dcFundInCash === 'yes' ? 'Yes' : 'No'}\n`;
+        text += `  Rounding:            ${state.commutationRounding} dp\n`;
+        if (state.commutationOrder.trim()) text += `  Order:\n    ${state.commutationOrder.split('\n').join('\n    ')}\n`;
+        if (state.commutationNotes.trim()) text += `  Notes: ${state.commutationNotes}\n`;
+        text += '\n';
+    }
+
+    text += section('PRE-CALCULATION VALIDATIONS (Errors)');
+    state.validationsPreCalc.forEach(vid => {
+        const v = MODULE_LIBRARY.validations.preCalc.find(x => x.id === vid);
+        if (v) text += `  - ${v.name}\n`;
+    });
+    if (state.validationsPreCalc.length === 0) text += '  (none selected)\n';
+    text += '\n';
+
+    text += section('POST-CALCULATION VALIDATIONS (Warnings)');
+    state.validationsPostCalc.forEach(vid => {
+        const v = MODULE_LIBRARY.validations.postCalc.find(x => x.id === vid);
+        if (v) text += `  - ${v.name}\n`;
+    });
+    if (state.validationsPostCalc.length === 0) text += '  (none selected)\n';
+    text += '\n';
+
+    text += section('DEPENDENCIES & SETUP');
+    state.dependencies.forEach(did => {
+        const d = MODULE_LIBRARY.dependencies.find(x => x.id === did);
+        if (d) text += `  - [${d.category}] ${d.name}\n`;
+    });
+    if (state.dependencies.length === 0) text += '  (none selected)\n';
+    text += '\n';
+
+    if (state.notes.trim()) {
+        text += section('ADDITIONAL NOTES');
+        text += state.notes + '\n\n';
+    }
+
+    const hasSignOff = state.analystName || state.coderName || state.reviewerName;
+    if (hasSignOff) {
+        text += section('SIGN-OFF');
+        if (state.analystName) text += `  Analyst:   ${state.analystName}${state.analystDate ? '  (' + state.analystDate + ')' : ''}\n`;
+        if (state.coderName) text += `  Coder:     ${state.coderName}${state.coderDate ? '  (' + state.coderDate + ')' : ''}\n`;
+        if (state.reviewerName) text += `  Reviewer:  ${state.reviewerName}${state.reviewerDate ? '  (' + state.reviewerDate + ')' : ''}\n`;
+        text += '\n';
+    }
+
+    text += '='.repeat(60) + '\n';
+    text += `Generated by Pension Calc Specbuilder | ${new Date().toLocaleString()}\n`;
+
+    download(text, `spec-${slug(state.schemeName)}-${state.specDate}.txt`, 'text/plain');
+}
+
+function section(title) {
+    return '-'.repeat(40) + '\n' + title + '\n' + '-'.repeat(40) + '\n';
+}
+
+function exportPDF() {
+    const { jsPDF } = window.jspdf;
+    if (!jsPDF) { alert('PDF library not loaded.'); return; }
+    const doc = new jsPDF();
+    const ct = getSelectedCalcType();
+    const margin = 20;
+    const pw = doc.internal.pageSize.getWidth() - margin * 2;
+    let y = 20;
+
+    function txt(text, size, bold, color) {
+        if (y > 270) { doc.addPage(); y = 20; }
+        doc.setFontSize(size || 10);
+        doc.setFont('helvetica', bold ? 'bold' : 'normal');
+        if (color) doc.setTextColor(...color); else doc.setTextColor(30, 30, 30);
+        const lines = doc.splitTextToSize(text, pw);
+        doc.text(lines, margin, y);
+        y += lines.length * (size ? size * 0.5 : 5) + 2;
+    }
+    function sec(title) {
+        y += 4;
+        if (y > 260) { doc.addPage(); y = 20; }
+        doc.setDrawColor(74, 159, 217);
+        doc.setLineWidth(0.5);
+        doc.line(margin, y, margin + pw, y);
+        y += 6;
+        txt(title, 12, true, [74, 159, 217]);
+    }
+
+    txt('PENSION CALC SPEC SHEET', 18, true, [74, 159, 217]);
+    y += 4;
+
+    const pdfStatusLabels = { draft: 'Draft', review: 'Review', approved: 'Approved' };
+    sec('Scheme Information');
+    txt(`Scheme: ${state.schemeName || 'Not set'}`, 10);
+    txt(`Requester: ${state.requesterName || 'Not set'}`, 10);
+    txt(`Date: ${state.specDate}  |  Version: ${state.specVersion}  |  Status: ${pdfStatusLabels[state.specStatus] || state.specStatus}`, 10);
+    if (state.validCategories.trim()) txt(`Valid Categories: ${state.validCategories}`, 9, false, [80,80,80]);
+
+    sec('Calculation Type');
+    txt(ct ? ct.name : 'Not selected', 11, true);
+
+    sec('Service Tranches');
+    state.tranches.forEach((t, idx) => {
+        const bt = MODULE_LIBRARY.benefitTypes.find(b => b.id === t.benefitType);
+        const ar = MODULE_LIBRARY.accrualRates.find(a => a.id === t.accrualRate);
+        const rv = MODULE_LIBRARY.revaluationMethods.find(r => r.id === t.revaluation);
+        const rf = MODULE_LIBRARY.retirementFactorTypes.find(f => f.id === t.retirementFactor);
+        const pdfUpload = { yes: 'Uploaded', no: 'Not yet', tbc: 'TBC' };
+        txt(`Tranche ${idx+1}: ${t.name || 'Untitled'}`, 10, true);
+        txt(`NPA: ${t.npa} | ${bt?bt.name:'?'} | ${ar?ar.name:'?'} | ${rv?rv.name:'?'} | ${rf?rf.name:'?'}${t.hasGMP?' | GMP':''}`, 9, false, [100,100,100]);
+        if (t.afrRate) txt(`AFR: ${t.afrRate}`, 9, false, [80,80,80]);
+        if (t.erfTableKey) txt(`ERF: ${t.erfTableKey} (${pdfUpload[t.erfUploadStatus]||'TBC'})${t.lrfTableKey ? '  |  LRF: '+t.lrfTableKey+' ('+( pdfUpload[t.lrfUploadStatus]||'TBC')+')' : ''}`, 9, false, [80,80,80]);
+        if (t.elementKeys.trim()) txt(`Elements: ${t.elementKeys}`, 9, false, [80,80,80]);
+        if (t.elementRollup.trim()) txt(`Roll-up: ${t.elementRollup}`, 9, false, [80,80,80]);
+        y += 2;
+    });
+
+    if (hasGMP()) {
+        const pdfMonths = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        const pdfGmpRule = state.gmpRetFactorRule === 'apply_erf' ? 'Apply ERF/LRF after GMP age' : 'No ERF/LRF after GMP age';
+        sec('GMP & Special Rules');
+        txt(`GMP Increase Date: ${state.gmpIncreaseDay} ${pdfMonths[(parseInt(state.gmpIncreaseMonth)||4)-1]}  |  s109: ${state.s109Rate || 'Not set'}`, 10);
+        txt(`Ret. Factor Rule: ${pdfGmpRule}`, 10);
+        if (state.post88GmpElementKeys.trim()) txt(`POST88 GMP Keys: ${state.post88GmpElementKeys}`, 9, false, [80,80,80]);
+        Object.entries(state.gmpOptions).forEach(([key, val]) => {
+            const item = MODULE_LIBRARY.gmpHandling.find(g => g.id === key);
+            if (item) {
+                let detail = '';
+                if (val !== true) { const sub = (item.methods||item.options||[]).find(m=>m.id===val); if(sub) detail=` \u2014 ${sub.name}`; }
+                txt(`\u2022 ${item.name}${detail}`, 10);
+            }
+        });
+    }
+
+    if (state.commutationStyle) {
+        const cs = MODULE_LIBRARY.commutationStyles.find(s => s.id === state.commutationStyle);
+        sec('Commutation / PCLS');
+        txt(`Style: ${cs ? cs.name : '?'}  |  Spouse %: ${state.spousePensionPct}%  |  Rounding: ${state.commutationRounding}dp`, 10);
+        txt(`DC in Cash: ${state.dcFundInCash==='yes'?'Yes':'No'}  |  Spouse GMP Min: ${state.spouseGmpMinimum==='nil_pre88'?'Nil Pre-88':'50% all GMP'}`, 10);
+        if (state.commutationFactorTableKey) txt(`Factor Table: ${state.commutationFactorTableKey}`, 9, false, [80,80,80]);
+    }
+
+    sec('Validations');
+    state.validationsPreCalc.forEach(vid => {
+        const v = MODULE_LIBRARY.validations.preCalc.find(x => x.id === vid);
+        if (v) txt(`\u2022 [Error] ${v.name}`, 10);
+    });
+    state.validationsPostCalc.forEach(vid => {
+        const v = MODULE_LIBRARY.validations.postCalc.find(x => x.id === vid);
+        if (v) txt(`\u2022 [Warning] ${v.name}`, 10);
+    });
+
+    sec('Dependencies & Setup');
+    state.dependencies.forEach(did => {
+        const d = MODULE_LIBRARY.dependencies.find(x => x.id === did);
+        if (d) txt(`\u2022 [${d.category}] ${d.name}`, 10);
+    });
+
+    if (state.notes.trim()) { sec('Additional Notes'); txt(state.notes, 10); }
+
+    const pdfHasSignOff = state.analystName || state.coderName || state.reviewerName;
+    if (pdfHasSignOff) {
+        sec('Sign-Off');
+        if (state.analystName) txt(`Analyst: ${state.analystName}${state.analystDate ? ' ('+state.analystDate+')' : ''}`, 10);
+        if (state.coderName) txt(`Coder: ${state.coderName}${state.coderDate ? ' ('+state.coderDate+')' : ''}`, 10);
+        if (state.reviewerName) txt(`Reviewer: ${state.reviewerName}${state.reviewerDate ? ' ('+state.reviewerDate+')' : ''}`, 10);
+    }
+
+    y += 8;
+    txt(`Generated by Pension Calc Specbuilder | ${new Date().toLocaleString()}`, 8, false, [150, 150, 150]);
+    doc.save(`spec-${slug(state.schemeName)}-${state.specDate}.pdf`);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SAVE / LOAD
+// ═══════════════════════════════════════════════════════════════
+function saveSpec() {
+    const name = state.schemeName || 'Unnamed Spec';
+    const specs = JSON.parse(localStorage.getItem('specbuilder-specs') || '{}');
+    specs['spec-' + Date.now()] = { name, date: new Date().toISOString(), state: JSON.parse(JSON.stringify(state)) };
+    localStorage.setItem('specbuilder-specs', JSON.stringify(specs));
+    showToast(`Saved "${name}"`);
+}
+
+function loadSpec(id) {
+    const specs = JSON.parse(localStorage.getItem('specbuilder-specs') || '{}');
+    if (specs[id]) {
+        state = specs[id].state;
+        closeLoadModal();
+        goToStep(state.currentStep);
+        showToast(`Loaded "${specs[id].name}"`);
+    }
+}
+
+function deleteSpec(id) {
+    const specs = JSON.parse(localStorage.getItem('specbuilder-specs') || '{}');
+    if (specs[id] && confirm(`Delete "${specs[id].name}"?`)) {
+        delete specs[id];
+        localStorage.setItem('specbuilder-specs', JSON.stringify(specs));
+        showLoadModal();
+    }
+}
+
+function showLoadModal() {
+    const specs = JSON.parse(localStorage.getItem('specbuilder-specs') || '{}');
+    const list = document.getElementById('savedSpecsList');
+    const entries = Object.entries(specs).sort((a, b) => new Date(b[1].date) - new Date(a[1].date));
+    if (entries.length === 0) {
+        list.innerHTML = '<div class="no-saved">No saved specs yet.</div>';
+    } else {
+        list.innerHTML = entries.map(([id, spec]) => `
+            <div class="saved-spec">
+                <div class="saved-spec-info">
+                    <div class="saved-spec-name">${esc(spec.name)}</div>
+                    <div class="saved-spec-date">${new Date(spec.date).toLocaleString()}</div>
+                </div>
+                <div class="saved-spec-actions">
+                    <button class="btn-load" onclick="loadSpec('${id}')">Load</button>
+                    <button class="btn-delete" onclick="deleteSpec('${id}')">Delete</button>
+                </div>
+            </div>`).join('');
+    }
+    document.getElementById('loadModal').classList.add('visible');
+}
+
+function closeLoadModal() { document.getElementById('loadModal').classList.remove('visible'); }
+
+function resetAll() {
+    if (!confirm('Start a new spec? Any unsaved changes will be lost.')) return;
+    state = {
+        currentStep: 0, returnStep: null,
+        schemeName: '', requesterName: '',
+        specDate: new Date().toISOString().split('T')[0],
+        specVersion: '1.0', specStatus: 'draft', validCategories: '',
+        calcType: null, tranches: [], gmpOptions: {},
+        gmpIncreaseMonth: '4', gmpIncreaseDay: '1', s109Rate: '',
+        gmpRetFactorRule: 'no_erf', post88GmpElementKeys: '',
+        commutationStyle: null, commutationFactorSource: null,
+        commutationOrder: '', commutationNotes: '',
+        spousePensionPct: '50', spouseGmpMinimum: '50_all',
+        dcFundInCash: 'no', commutationRounding: '2',
+        commutationFactorTableKey: '', commutationFactorUploaded: 'tbc',
+        validationsPreCalc: [], validationsPostCalc: [],
+        dependencies: [], notes: '',
+        analystName: '', analystDate: '', coderName: '',
+        coderDate: '', reviewerName: '', reviewerDate: ''
+    };
+    goToStep(0);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════════
+function showToast(msg) {
+    const t = document.createElement('div');
+    t.textContent = msg;
+    Object.assign(t.style, {
+        position:'fixed',bottom:'24px',right:'24px',
+        background:'var(--xps-success)',color:'#fff',
+        padding:'12px 20px',borderRadius:'8px',
+        fontSize:'0.9rem',fontWeight:'500',
+        zIndex:'300',boxShadow:'0 4px 12px rgba(0,0,0,0.3)',
+        animation:'fadeIn 0.3s ease'
+    });
+    document.body.appendChild(t);
+    setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity 0.3s'; }, 2000);
+    setTimeout(() => t.remove(), 2500);
+}
+
+function esc(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
+function slug(s) { return (s || 'unnamed').replace(/\s+/g, '-').toLowerCase(); }
+function download(content, filename, type) {
+    const blob = new Blob([content], { type });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+(function init() {
+    const hash = parseInt(window.location.hash.replace('#', ''));
+    if (!isNaN(hash) && hash >= 0 && hash < STEPS.length) state.currentStep = hash;
+    goToStep(state.currentStep);
+})();
+
+document.getElementById('loadModal').addEventListener('click', function(e) {
+    if (e.target === this) closeLoadModal();
+});
+
+window.addEventListener('hashchange', function() {
+    const hash = parseInt(window.location.hash.replace('#', ''));
+    if (!isNaN(hash) && hash >= 0 && hash < STEPS.length && hash !== state.currentStep) goToStep(hash);
+});
+</script>
+</body>
+</html>
