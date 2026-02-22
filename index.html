@@ -97,7 +97,7 @@
         /* ─── HEADER SUMMARY ─── */
         .header-summary {
             display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-            padding: 8px 24px; background: var(--xps-bg);
+            padding: 8px 24px; background: var(--xps-dark-bg);
             border-bottom: 1px solid var(--xps-border);
             min-height: 20px; position: sticky; top: 67px; z-index: 99;
         }
@@ -489,7 +489,7 @@
         }
         .inventory-search input {
             width: 100%; padding: 6px 10px; font-size: 0.75rem;
-            background: var(--xps-bg); border: 1px solid var(--xps-border);
+            background: var(--xps-dark-bg); border: 1px solid var(--xps-border);
             border-radius: 6px; color: var(--xps-text); font-family: inherit;
             outline: none; box-sizing: border-box;
         }
@@ -795,7 +795,7 @@ function updateCodeInventoryPanel() {
         body += `<div class="inventory-cat-items${catOpen ? ' open' : ''}" id="${catId}-items">`;
         group.options.forEach(item => {
             const searchText = [item.name, item.description, item.codeClass, item.scheme].filter(Boolean).join(' ').toLowerCase();
-            body += `<div class="inventory-item" data-search="${esc(searchText)}">
+            body += `<div class="inventory-item" data-search="${searchText.replace(/"/g, '&quot;')}">
                 <div class="inventory-item-name">${esc(item.name)}</div>
                 ${item.description ? `<div class="inventory-item-desc">${esc(item.description)}</div>` : ''}
                 <div class="inventory-item-class">${esc(item.codeClass)}</div>
@@ -804,13 +804,13 @@ function updateCodeInventoryPanel() {
             if (capsByParent[item.id]) {
                 capsByParent[item.id].forEach(cap => {
                     const capSearch = [cap.name, cap.description, cap.methodName].filter(Boolean).join(' ').toLowerCase();
-                    body += `<div class="inventory-capability" data-search="${esc(capSearch)}">${esc(cap.name)}${cap.description ? ' — <span style="color:var(--xps-text-muted)">' + esc(cap.description) + '</span>' : ''}</div>`;
+                    body += `<div class="inventory-capability" data-search="${capSearch.replace(/"/g, '&quot;')}">${esc(cap.name)}${cap.description ? ' — <span style="color:var(--xps-text-muted)">' + esc(cap.description) + '</span>' : ''}</div>`;
                 });
             }
         });
         group.standaloneCaps.forEach(cap => {
             const capSearch = [cap.name, cap.description, cap.methodName, cap.scheme].filter(Boolean).join(' ').toLowerCase();
-            body += `<div class="inventory-item" data-search="${esc(capSearch)}">
+            body += `<div class="inventory-item" data-search="${capSearch.replace(/"/g, '&quot;')}">
                 <div class="inventory-item-name">${esc(cap.name)}</div>
                 ${cap.description ? `<div class="inventory-item-desc">${esc(cap.description)}</div>` : ''}
                 <div class="inventory-item-class">${esc(cap.methodName)}</div>
@@ -857,12 +857,41 @@ function toggleInventoryCat(catKey, catId) {
     localStorage.setItem('specbuilder-inventory-cats', JSON.stringify(cats));
 }
 
+let preFilterCatState = null;
+
 function filterInventory(query) {
     const list = document.getElementById('inventoryList');
     if (!list) return;
     const q = query.toLowerCase().trim();
     const headers = list.querySelectorAll('.inventory-cat-header');
     let totalVisible = 0;
+
+    // Save category state before first filter keystroke
+    if (q && !preFilterCatState) {
+        preFilterCatState = {};
+        headers.forEach(header => {
+            const cat = header.getAttribute('data-cat');
+            const catId = 'inv-cat-' + cat.replace(/\W/g, '_');
+            const items = document.getElementById(catId + '-items');
+            if (items) preFilterCatState[catId] = items.classList.contains('open');
+        });
+    }
+
+    // Restore state when filter is cleared
+    if (!q && preFilterCatState) {
+        headers.forEach(header => {
+            const cat = header.getAttribute('data-cat');
+            const catId = 'inv-cat-' + cat.replace(/\W/g, '_');
+            const items = document.getElementById(catId + '-items');
+            const arrow = document.getElementById(catId + '-arrow');
+            if (items) {
+                const wasOpen = preFilterCatState[catId] !== false;
+                items.classList.toggle('open', wasOpen);
+                if (arrow) arrow.classList.toggle('open', wasOpen);
+            }
+        });
+        preFilterCatState = null;
+    }
 
     headers.forEach(header => {
         const cat = header.getAttribute('data-cat');
@@ -937,6 +966,8 @@ function buildCodeInventoryReviewHTML() {
     return html;
 }
 
+function mdCell(str) { return (str || '').replace(/\|/g, '\\|'); }
+
 function buildCodeInventoryMarkdown() {
     const { options, capabilities, count } = getGroupedInventory();
     if (count === 0) return '';
@@ -949,7 +980,7 @@ function buildCodeInventoryMarkdown() {
         md += `| Category | Name | Description | Code Class | Scheme | Last Modified |\n`;
         md += `|----------|------|-------------|-----------|--------|---------------|\n`;
         options.forEach(o => {
-            md += `| ${formatCategoryName(o.category)} | ${o.name} | ${o.description || ''} | ${o.codeClass} | ${o.scheme} | ${o.lastModified} |\n`;
+            md += `| ${mdCell(formatCategoryName(o.category))} | ${mdCell(o.name)} | ${mdCell(o.description)} | ${mdCell(o.codeClass)} | ${mdCell(o.scheme)} | ${mdCell(o.lastModified)} |\n`;
         });
         md += '\n';
     }
@@ -960,7 +991,7 @@ function buildCodeInventoryMarkdown() {
         md += `|----------|------|-------------|--------|---------------|--------|---------------|\n`;
         capabilities.forEach(c => {
             const parent = c.parentOption ? c.parentOption.name : '';
-            md += `| ${formatCategoryName(c.category)} | ${c.name} | ${c.description || ''} | ${c.methodName} | ${parent} | ${c.scheme} | ${c.lastModified} |\n`;
+            md += `| ${mdCell(formatCategoryName(c.category))} | ${mdCell(c.name)} | ${mdCell(c.description)} | ${mdCell(c.methodName)} | ${mdCell(parent)} | ${mdCell(c.scheme)} | ${mdCell(c.lastModified)} |\n`;
         });
         md += '\n';
     }
