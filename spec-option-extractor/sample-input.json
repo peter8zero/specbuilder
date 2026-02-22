@@ -1,0 +1,38 @@
+[
+  {
+    "moduleName": "CpiCappedRevaluation",
+    "scheme": "Core",
+    "code": "using System;\nusing Calculate.Interfaces;\n\nnamespace Calculate.Core.Revaluation\n{\n    [SpecOption(\n        Category = \"Revaluation\",\n        Name = \"CPI-Capped (s101)\",\n        Description = \"Statutory revaluation capped at CPI rather than RPI.\",\n        WhyItMatters = \"The standard for post-97 deferred benefits under most modern schemes.\"\n    )]\n    public class CpiCappedRevaluation : IRevaluationStrategy\n    {\n        [SpecCapability(\n            Category = \"Revaluation\",\n            Name = \"Pro-rata CPI Revaluation\",\n            Description = \"Calculates CPI revaluation for a partial year period.\",\n            WhyItMatters = \"Needed when a member leaves mid-year.\"\n        )]\n        public decimal CalculateProRata(decimal pension, DateTime startDate, DateTime endDate, decimal partialFactor)\n        {\n            return pension * partialFactor;\n        }\n\n        public decimal Calculate(decimal pension, DateTime startDate, DateTime endDate)\n        {\n            return pension;\n        }\n    }\n}",
+    "lastModified": "2025-11-15T10:30:00"
+  },
+  {
+    "moduleName": "FixedRateRevaluation",
+    "scheme": "Core",
+    "code": "using System;\nusing Calculate.Interfaces;\n\nnamespace Calculate.Core.Revaluation\n{\n    [SpecOption(Category = \"Revaluation\", Name = \"Fixed Rate\", Description = \"Revaluation at a fixed annual rate specified in scheme rules.\")]\n    public class FixedRateRevaluation : IRevaluationStrategy\n    {\n        public decimal Calculate(decimal pension, DateTime startDate, DateTime endDate)\n        {\n            return pension;\n        }\n    }\n}",
+    "lastModified": "2025-10-01T14:00:00"
+  },
+  {
+    "moduleName": "TrivialCommutation",
+    "scheme": "Core",
+    "code": "using System;\nusing Calculate.Interfaces;\n\nnamespace Calculate.Core.Commutation\n{\n    [SpecOption(\n        Category = \"Commutation\",\n        Name = \"Trivial Commutation\",\n        Description = \"Full commutation of small pots below the trivial commutation limit.\",\n        WhyItMatters = \"Allows members with very small benefits to take a one-off lump sum instead of a pension.\"\n    )]\n    public class TrivialCommutation : ICommutationStrategy\n    {\n        public decimal Commute(decimal pension, decimal factor)\n        {\n            return pension * factor;\n        }\n    }\n}",
+    "lastModified": "2025-09-20T09:15:00"
+  },
+  {
+    "moduleName": "GmpEqualiser",
+    "scheme": "Core",
+    "code": "using System;\nusing Calculate.Interfaces;\n\nnamespace Calculate.Core.Gmp\n{\n    [SpecOption(\n        Category = \"GMP\",\n        Name = \"GMP Equalisation (Dual Record)\",\n        Description = \"Applies GMP equalisation using the dual-record method per Lloyds.\",\n        WhyItMatters = \"Required for schemes with members who have GMP service between 1990-1997.\"\n    )]\n    public class GmpEqualiser : IGmpStrategy\n    {\n        [SpecCapability(\n            Category = \"GMP\",\n            Name = \"Anti-Franking Check\",\n            Description = \"Checks whether excess pension above GMP is sufficient to cover GMP increases.\",\n            WhyItMatters = \"Prevents schemes from using GMP step-ups to reduce the total pension paid.\"\n        )]\n        public bool CheckAntiFranking(decimal totalPension, decimal gmpAmount, decimal gmpIncrease)\n        {\n            return (totalPension - gmpAmount) >= gmpIncrease;\n        }\n\n        [SpecCapability(\n            Category = \"GMP\",\n            Name = \"Section 148 Revaluation\",\n            Description = \"Applies s148 orders to revalue GMP between leaving and GMP pension age.\"\n        )]\n        public decimal ApplySection148(decimal gmp, decimal revaluationFactor)\n        {\n            return gmp * revaluationFactor;\n        }\n\n        public decimal Equalise(decimal malePension, decimal femalePension)\n        {\n            return Math.Max(malePension, femalePension);\n        }\n    }\n}",
+    "lastModified": "2025-12-01T16:45:00"
+  },
+  {
+    "moduleName": "InternalHelper",
+    "scheme": "Core",
+    "code": "using System;\n\nnamespace Calculate.Core.Internal\n{\n    // No SpecOption — this is an internal utility class\n    public class InternalHelper\n    {\n        public static string FormatDate(DateTime d) => d.ToString(\"yyyy-MM-dd\");\n    }\n}",
+    "lastModified": "2025-08-10T11:00:00"
+  },
+  {
+    "moduleName": "TransferCalculator",
+    "scheme": "Core",
+    "code": "using System;\nusing Calculate.Interfaces;\n\nnamespace Calculate.Core.Transfers\n{\n    public class TransferCalculator : ITransferStrategy\n    {\n        [SpecCapability(\n            Category = \"Transfers\",\n            Name = \"Partial CETV\",\n            Description = \"Calculates a partial cash equivalent transfer value.\",\n            WhyItMatters = \"Needed when a member transfers only part of their benefits.\"\n        )]\n        public decimal CalculatePartialCetv(decimal totalCetv, decimal proportion)\n        {\n            return totalCetv * proportion;\n        }\n\n        [SpecCapability(\n            Category = \"Transfers\",\n            Name = \"Club Transfer Value\",\n            Description = \"Calculates transfer value under the Public Sector Transfer Club.\"\n        )]\n        public decimal CalculateClubTransfer(decimal pension, decimal clubFactor)\n        {\n            return pension * clubFactor;\n        }\n    }\n}",
+    "lastModified": "2025-11-20T08:00:00"
+  }
+]

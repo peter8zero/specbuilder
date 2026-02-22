@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pension Calc Specbuilder</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="module-library.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -62,16 +61,12 @@
             top: 0;
             z-index: 100;
         }
-        .logo-container { display: flex; align-items: center; gap: 14px; }
-        .logo-icon {
-            width: 32px; height: 32px;
-            background: var(--xps-blue);
-            border-radius: 8px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 18px; color: #fff; font-weight: 700;
-        }
-        .logo-text { font-size: 1.25rem; font-weight: 600; color: var(--xps-text); }
-        .logo-text span { font-weight: 300; color: var(--xps-text-muted); }
+        .logo-container { display: flex; align-items: baseline; gap: 16px; }
+        .logo-container svg { height: 36px; width: auto; align-self: center; }
+        .logo-text { font-size: 1.4rem; font-weight: 400; color: var(--xps-text); letter-spacing: -0.5px; }
+        .logo-text strong { font-weight: 700; }
+        .logo-divider { width: 1px; height: 24px; background: var(--xps-border); align-self: center; }
+        .app-title { font-size: 1.1rem; font-weight: 300; color: var(--xps-text-muted); }
         .header-actions { display: flex; gap: 8px; align-items: center; }
         .header-btn {
             display: inline-flex; align-items: center; gap: 6px;
@@ -98,6 +93,29 @@
         }
         .theme-toggle button:hover { color: var(--xps-text); }
         .theme-toggle button.active { background: var(--xps-blue); color: #fff; }
+
+        /* ─── HEADER SUMMARY ─── */
+        .header-summary {
+            display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+            padding: 8px 24px; background: var(--xps-bg);
+            border-bottom: 1px solid var(--xps-border);
+            min-height: 20px; position: sticky; top: 67px; z-index: 99;
+        }
+        .header-summary:empty { display: none; }
+        .summary-chip {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 3px 10px; border-radius: 4px; font-size: 0.75rem;
+            background: rgba(255,255,255,0.05); border: 1px solid var(--xps-border);
+            color: var(--xps-text);
+        }
+        .summary-chip .chip-label {
+            font-weight: 600; text-transform: uppercase; font-size: 0.6rem;
+            letter-spacing: 0.3px; color: var(--xps-text-muted);
+        }
+        .summary-chip.accent { border-color: var(--xps-blue); background: rgba(74,159,217,0.1); }
+        .summary-chip.gmp { border-color: var(--xps-purple); background: rgba(156,39,176,0.1); color: var(--xps-purple); }
+        .summary-sep { width: 1px; height: 16px; background: var(--xps-border); }
+        .summary-empty { font-size: 0.75rem; color: var(--xps-text-muted); font-style: italic; }
 
         /* ─── LAYOUT ─── */
         .app-container {
@@ -316,34 +334,7 @@
         .category-label:first-child { margin-top: 0; }
 
         /* ─── ORDER PANEL ─── */
-        .order-panel { position: sticky; top: 80px; }
-        .order-card {
-            background: var(--xps-card-bg); border-radius: 12px;
-            border: 1px solid var(--xps-border); overflow: hidden;
-        }
-        .order-header { background: var(--xps-blue); color: #fff; padding: 16px 20px; font-size: 1.05rem; font-weight: 600; }
-        .order-body { padding: 16px 20px; }
-        .order-section { margin-bottom: 14px; }
-        .order-section:last-child { margin-bottom: 0; }
-        .order-section-title {
-            font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
-            letter-spacing: 0.5px; color: var(--xps-text-muted); margin-bottom: 4px;
-        }
-        .order-section-value { font-size: 0.85rem; color: var(--xps-text); }
-        .order-section-value.empty { color: var(--xps-text-muted); font-style: italic; font-size: 0.8rem; }
-        .order-tags { display: flex; flex-wrap: wrap; gap: 4px; }
-        .order-tag {
-            display: inline-block; padding: 3px 8px;
-            background: var(--xps-charcoal); border-radius: 4px;
-            font-size: 0.75rem; color: var(--xps-text);
-        }
-        .order-tag.gmp { background: rgba(156,39,176,0.2); color: var(--xps-purple); }
-        .order-divider { height: 1px; background: var(--xps-border); margin: 12px 0; }
-        .order-actions {
-            padding: 12px 20px; border-top: 1px solid var(--xps-border);
-            display: flex; gap: 8px;
-        }
-        .order-actions .btn { flex: 1; font-size: 0.8rem; padding: 8px 12px; justify-content: center; }
+        .order-panel { position: sticky; top: 104px; }
 
         /* ─── REVIEW ─── */
         .review-sheet { border: 1px solid var(--xps-border); border-radius: 8px; overflow: hidden; }
@@ -413,6 +404,8 @@
             .app-container { grid-template-columns: 1fr; padding: 16px; }
             .order-panel { position: static; }
             .header-bar { padding: 12px 16px; flex-wrap: wrap; gap: 8px; }
+            .header-summary { padding: 6px 16px; }
+            .order-panel { top: 80px; }
             .card-grid { grid-template-columns: 1fr; }
             .step-indicator { padding: 12px 12px 28px; }
             .step-label { display: none; }
@@ -430,8 +423,6 @@
             .step-indicator { padding: 10px 8px 12px; }
             .export-bar { flex-direction: column; }
             .export-bar .btn { width: 100%; justify-content: center; }
-            .order-actions { flex-direction: column; }
-            .order-actions .btn { width: 100%; }
             .selection-card { padding: 14px; }
             .card-name { font-size: 0.9rem; padding-right: 30px; }
             .card-desc { font-size: 0.78rem; }
@@ -454,7 +445,7 @@
         /* ─── PRINT ─── */
         @media print {
             body { background: #fff; color: #000; }
-            .header-bar, .step-indicator, .step-nav, .order-panel,
+            .header-bar, .header-summary, .step-indicator, .step-nav, .order-panel,
             .export-bar, .header-actions { display: none !important; }
             .app-container { grid-template-columns: 1fr; padding: 0; max-width: 100%; }
             .step-content { border: none; padding: 0; background: #fff; break-inside: avoid; }
@@ -472,6 +463,71 @@
         }
         .print-header { display: none; }
 
+        /* ─── CODE INVENTORY PANEL ─── */
+        .inventory-card {
+            background: var(--xps-card-bg); border-radius: 12px;
+            border: 1px solid var(--xps-border); overflow: hidden;
+        }
+        .inventory-header {
+            padding: 12px 16px; cursor: pointer;
+            display: flex; align-items: center; justify-content: space-between;
+            background: rgba(76,175,80,0.08); transition: background 0.2s;
+        }
+        .inventory-header:hover { background: rgba(76,175,80,0.15); }
+        .inventory-header-left { display: flex; align-items: center; gap: 8px; }
+        .inventory-header-left .arrow { font-size: 0.7rem; color: var(--xps-text-muted); transition: transform 0.2s; }
+        .inventory-header-left .arrow.open { transform: rotate(90deg); }
+        .inventory-header-title { font-size: 0.85rem; font-weight: 600; color: var(--xps-success); }
+        .inventory-header-count {
+            font-size: 0.7rem; padding: 2px 8px; border-radius: 10px;
+            background: rgba(76,175,80,0.2); color: var(--xps-success); font-weight: 600;
+        }
+        .inventory-body { padding: 0; display: none; }
+        .inventory-body.open { display: block; }
+        .inventory-search {
+            padding: 8px 12px; border-bottom: 1px solid var(--xps-border);
+        }
+        .inventory-search input {
+            width: 100%; padding: 6px 10px; font-size: 0.75rem;
+            background: var(--xps-bg); border: 1px solid var(--xps-border);
+            border-radius: 6px; color: var(--xps-text); font-family: inherit;
+            outline: none; box-sizing: border-box;
+        }
+        .inventory-search input:focus { border-color: var(--xps-success); }
+        .inventory-search input::placeholder { color: var(--xps-text-muted); }
+        .inventory-list {
+            max-height: 65vh; overflow-y: auto; padding: 8px 12px 12px;
+        }
+        .inventory-list::-webkit-scrollbar { width: 4px; }
+        .inventory-list::-webkit-scrollbar-thumb { background: var(--xps-border); border-radius: 2px; }
+        .inventory-cat-header {
+            font-size: 0.65rem; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 0.5px; color: var(--xps-text-muted);
+            margin-top: 10px; margin-bottom: 0; padding: 4px 0;
+            border-bottom: 1px solid var(--xps-border);
+            cursor: pointer; display: flex; align-items: center; justify-content: space-between;
+            user-select: none;
+        }
+        .inventory-cat-header:first-child { margin-top: 0; }
+        .inventory-cat-header:hover { color: var(--xps-text); }
+        .inventory-cat-header .cat-arrow { font-size: 0.55rem; transition: transform 0.2s; }
+        .inventory-cat-header .cat-arrow.open { transform: rotate(90deg); }
+        .inventory-cat-header .cat-count {
+            font-size: 0.6rem; font-weight: 400; color: var(--xps-text-muted); margin-left: 6px;
+        }
+        .inventory-cat-items { display: none; }
+        .inventory-cat-items.open { display: block; }
+        .inventory-item { padding: 6px 0; }
+        .inventory-item-name { font-size: 0.8rem; font-weight: 500; color: var(--xps-text); }
+        .inventory-item-desc { font-size: 0.7rem; color: var(--xps-text-muted); line-height: 1.4; margin-top: 2px; }
+        .inventory-item-class { font-size: 0.7rem; font-family: 'Consolas','Monaco',monospace; color: var(--xps-accent); }
+        .inventory-item-meta { font-size: 0.65rem; color: var(--xps-text-muted); }
+        .inventory-capability {
+            padding: 2px 0 2px 12px; font-size: 0.7rem; color: var(--xps-text-muted);
+        }
+        .inventory-capability::before { content: '\2517 '; font-size: 0.65rem; }
+        .inventory-no-results { font-size: 0.75rem; color: var(--xps-text-muted); font-style: italic; padding: 12px 0; text-align: center; }
+
         /* ─── ANIMATIONS ─── */
         .fade-in { animation: fadeIn 0.3s ease; }
         @keyframes fadeIn {
@@ -484,10 +540,20 @@
     <!-- HEADER -->
     <div class="header-bar">
         <div class="logo-container">
-            <div class="logo-icon">S</div>
-            <div class="logo-text">Specbuilder <span>Pension Calc Menu</span></div>
+            <svg viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="5,8 20,25 5,42 12,42 25,29 25,25 12,8" fill="#4A9FD9"/>
+                <polygon points="45,8 38,8 25,21 25,25 38,42 45,42 30,25" fill="#4A9FD9"/>
+                <polygon points="25,21 25,29 30,25 25,21" fill="#3D8BBF"/>
+            </svg>
+            <span class="logo-text"><strong>XPS</strong> Group</span>
+            <div class="logo-divider"></div>
+            <span class="app-title">Specbuilder</span>
         </div>
         <div class="header-actions">
+            <button class="header-btn" onclick="goToStep(6)" title="Review spec">Review</button>
+            <button class="header-btn" onclick="exportMarkdown()" title="Export as Markdown" style="color:var(--xps-purple);border-color:var(--xps-purple)">Export MD</button>
+            <button class="header-btn" onclick="exportText()" title="Export as text">Export Text</button>
+            <div class="logo-divider"></div>
             <button class="header-btn" onclick="saveSpec()" title="Save current spec">&#128190; Save</button>
             <button class="header-btn" onclick="showLoadModal()" title="Load a saved spec">&#128194; Load</button>
             <button class="header-btn" onclick="resetAll()" title="Start fresh">&#128260; New</button>
@@ -497,6 +563,7 @@
             </div>
         </div>
     </div>
+    <div class="header-summary" id="headerSummary"></div>
 
     <!-- MAIN APP -->
     <div class="app-container">
@@ -505,17 +572,7 @@
             <div class="step-content" id="stepContent"></div>
         </div>
         <div class="order-panel">
-            <div class="order-card">
-                <div class="order-header">Your Order</div>
-                <div class="order-body" id="orderBody">
-                    <p class="order-section-value empty">Start building your spec...</p>
-                </div>
-                <div class="order-actions" style="flex-wrap:wrap">
-                    <button class="btn btn-secondary" onclick="goToStep(6)" style="font-size:0.8rem">Review Order</button>
-                    <button class="btn btn-primary" onclick="exportMarkdown()" style="font-size:0.8rem;background:var(--xps-purple)">Export Markdown</button>
-                    <button class="btn btn-primary" onclick="exportText()" style="font-size:0.8rem">Export Text</button>
-                </div>
-            </div>
+            <div id="codeInventoryContainer"></div>
         </div>
     </div>
 
@@ -642,6 +699,303 @@ function setTheme(theme) {
     localStorage.setItem('specbuilder-theme', theme);
 }
 (function() { const s = localStorage.getItem('specbuilder-theme'); if (s) setTheme(s); })();
+
+// ═══════════════════════════════════════════════════════════════
+// CODE INVENTORY (code-options.js / code-capabilities.js)
+// ═══════════════════════════════════════════════════════════════
+
+function loadCodeInventory() {
+    return Promise.allSettled([
+        loadScript('code-options.js'),
+        loadScript('code-capabilities.js')
+    ]).then(() => {
+        updateCodeInventoryPanel();
+    });
+}
+
+function loadScript(src) {
+    return new Promise((resolve) => {
+        const s = document.createElement('script');
+        s.src = src;
+        s.onload = resolve;
+        s.onerror = resolve; // missing files are fine
+        document.head.appendChild(s);
+    });
+}
+
+function formatCategoryName(key) {
+    const KNOWN = { gmp: 'GMP', dc: 'DC', pcls: 'PCLS', erf: 'ERF', lrf: 'LRF', afr: 'AFR', cetv: 'CETV' };
+    return key.replace(/_/g, ' ').replace(/\b\w+/g, w => KNOWN[w.toLowerCase()] || w.charAt(0).toUpperCase() + w.slice(1));
+}
+
+// Shared data layer: groups options and capabilities by category,
+// nests parented capabilities under their parent option.
+// Returns { groups: { [category]: { options: [...], standaloneCaps: [...] } }, capsByParent: {...}, count }
+function getGroupedInventory() {
+    const options = [];
+    const capabilities = [];
+    if (typeof CODE_OPTIONS !== 'undefined') {
+        Object.entries(CODE_OPTIONS).forEach(([category, items]) => {
+            items.forEach(item => options.push({ ...item, category }));
+        });
+    }
+    if (typeof CODE_CAPABILITIES !== 'undefined') {
+        Object.entries(CODE_CAPABILITIES).forEach(([category, items]) => {
+            items.forEach(item => capabilities.push({ ...item, category }));
+        });
+    }
+    const count = options.length + capabilities.length;
+    if (count === 0) return { groups: {}, capsByParent: {}, options, capabilities, count };
+
+    // Capabilities keyed by parent option id
+    const capsByParent = {};
+    const standaloneCaps = [];
+    capabilities.forEach(c => {
+        const parentId = c.parentOption ? c.parentOption.id : null;
+        if (parentId) {
+            if (!capsByParent[parentId]) capsByParent[parentId] = [];
+            capsByParent[parentId].push(c);
+        } else {
+            standaloneCaps.push(c);
+        }
+    });
+
+    // Build merged category groups (options + standalone caps together)
+    const groups = {};
+    options.forEach(o => {
+        if (!groups[o.category]) groups[o.category] = { options: [], standaloneCaps: [] };
+        groups[o.category].options.push(o);
+    });
+    standaloneCaps.forEach(c => {
+        if (!groups[c.category]) groups[c.category] = { options: [], standaloneCaps: [] };
+        groups[c.category].standaloneCaps.push(c);
+    });
+
+    return { groups, capsByParent, options, capabilities, count };
+}
+
+function updateCodeInventoryPanel() {
+    const container = document.getElementById('codeInventoryContainer');
+    if (!container) return;
+    const { groups, capsByParent, count } = getGroupedInventory();
+    if (count === 0) { container.innerHTML = ''; return; }
+
+    const isOpen = localStorage.getItem('specbuilder-inventory-open') === 'true';
+    const openCats = JSON.parse(localStorage.getItem('specbuilder-inventory-cats') || '{}');
+
+    let body = '';
+    Object.entries(groups).forEach(([cat, group]) => {
+        const catId = 'inv-cat-' + cat.replace(/\W/g, '_');
+        const catOpen = openCats[cat] !== false; // default open
+        const itemCount = group.options.length + group.standaloneCaps.length;
+
+        body += `<div class="inventory-cat-header" onclick="toggleInventoryCat('${cat}', '${catId}')" data-cat="${esc(cat)}">
+            <span><span class="cat-arrow${catOpen ? ' open' : ''}" id="${catId}-arrow">&#9654;</span> ${esc(formatCategoryName(cat))}<span class="cat-count">(${itemCount})</span></span>
+        </div>`;
+        body += `<div class="inventory-cat-items${catOpen ? ' open' : ''}" id="${catId}-items">`;
+        group.options.forEach(item => {
+            const searchText = [item.name, item.description, item.codeClass, item.scheme].filter(Boolean).join(' ').toLowerCase();
+            body += `<div class="inventory-item" data-search="${esc(searchText)}">
+                <div class="inventory-item-name">${esc(item.name)}</div>
+                ${item.description ? `<div class="inventory-item-desc">${esc(item.description)}</div>` : ''}
+                <div class="inventory-item-class">${esc(item.codeClass)}</div>
+                <div class="inventory-item-meta">${esc(item.scheme)} &middot; ${esc(item.lastModified)}</div>
+            </div>`;
+            if (capsByParent[item.id]) {
+                capsByParent[item.id].forEach(cap => {
+                    const capSearch = [cap.name, cap.description, cap.methodName].filter(Boolean).join(' ').toLowerCase();
+                    body += `<div class="inventory-capability" data-search="${esc(capSearch)}">${esc(cap.name)}${cap.description ? ' — <span style="color:var(--xps-text-muted)">' + esc(cap.description) + '</span>' : ''}</div>`;
+                });
+            }
+        });
+        group.standaloneCaps.forEach(cap => {
+            const capSearch = [cap.name, cap.description, cap.methodName, cap.scheme].filter(Boolean).join(' ').toLowerCase();
+            body += `<div class="inventory-item" data-search="${esc(capSearch)}">
+                <div class="inventory-item-name">${esc(cap.name)}</div>
+                ${cap.description ? `<div class="inventory-item-desc">${esc(cap.description)}</div>` : ''}
+                <div class="inventory-item-class">${esc(cap.methodName)}</div>
+                <div class="inventory-item-meta">${esc(cap.scheme)} &middot; ${esc(cap.lastModified)}</div>
+            </div>`;
+        });
+        body += '</div>';
+    });
+
+    container.innerHTML = `<div class="inventory-card">
+        <div class="inventory-header" onclick="toggleCodeInventory()">
+            <div class="inventory-header-left">
+                <span class="arrow${isOpen ? ' open' : ''}" id="inventoryArrow">&#9654;</span>
+                <span class="inventory-header-title">Code Inventory</span>
+            </div>
+            <span class="inventory-header-count">${count}</span>
+        </div>
+        <div class="inventory-body${isOpen ? ' open' : ''}" id="inventoryBody">
+            <div class="inventory-search">
+                <input type="text" id="inventorySearch" placeholder="Filter inventory..." oninput="filterInventory(this.value)">
+            </div>
+            <div class="inventory-list" id="inventoryList">${body}</div>
+        </div>
+    </div>`;
+}
+
+function toggleCodeInventory() {
+    const body = document.getElementById('inventoryBody');
+    const arrow = document.getElementById('inventoryArrow');
+    if (!body) return;
+    const isOpen = body.classList.toggle('open');
+    arrow.classList.toggle('open', isOpen);
+    localStorage.setItem('specbuilder-inventory-open', isOpen ? 'true' : 'false');
+}
+
+function toggleInventoryCat(catKey, catId) {
+    const items = document.getElementById(catId + '-items');
+    const arrow = document.getElementById(catId + '-arrow');
+    if (!items) return;
+    const isOpen = items.classList.toggle('open');
+    arrow.classList.toggle('open', isOpen);
+    const cats = JSON.parse(localStorage.getItem('specbuilder-inventory-cats') || '{}');
+    cats[catKey] = isOpen;
+    localStorage.setItem('specbuilder-inventory-cats', JSON.stringify(cats));
+}
+
+function filterInventory(query) {
+    const list = document.getElementById('inventoryList');
+    if (!list) return;
+    const q = query.toLowerCase().trim();
+    const headers = list.querySelectorAll('.inventory-cat-header');
+    let totalVisible = 0;
+
+    headers.forEach(header => {
+        const cat = header.getAttribute('data-cat');
+        const catId = 'inv-cat-' + cat.replace(/\W/g, '_');
+        const itemsContainer = document.getElementById(catId + '-items');
+        if (!itemsContainer) return;
+
+        const items = itemsContainer.querySelectorAll('[data-search]');
+        let catVisible = 0;
+        items.forEach(item => {
+            const match = !q || item.getAttribute('data-search').includes(q);
+            item.style.display = match ? '' : 'none';
+            if (match) catVisible++;
+        });
+
+        header.style.display = catVisible > 0 || !q ? '' : 'none';
+        totalVisible += catVisible;
+
+        // Auto-expand categories with matches when filtering
+        if (q && catVisible > 0) {
+            itemsContainer.classList.add('open');
+            const arrow = document.getElementById(catId + '-arrow');
+            if (arrow) arrow.classList.add('open');
+        }
+    });
+
+    // Show "no results" message
+    let noResults = list.querySelector('.inventory-no-results');
+    if (q && totalVisible === 0) {
+        if (!noResults) {
+            noResults = document.createElement('div');
+            noResults.className = 'inventory-no-results';
+            list.appendChild(noResults);
+        }
+        noResults.textContent = `No items matching "${query}"`;
+        noResults.style.display = '';
+    } else if (noResults) {
+        noResults.style.display = 'none';
+    }
+}
+
+function buildCodeInventoryReviewHTML() {
+    const { options, capabilities, count } = getGroupedInventory();
+    if (count === 0) return '';
+
+    let html = `<div class="review-section">
+        <div class="review-section-title">Code Inventory</div>
+        <p style="font-size:0.8rem;color:var(--xps-text-muted);margin-bottom:10px">Code options and capabilities found in the codebase at time of review.</p>`;
+
+    if (options.length > 0) {
+        html += `<div style="font-size:0.75rem;font-weight:600;color:var(--xps-text-muted);margin-bottom:4px">OPTIONS</div>`;
+        options.forEach(o => {
+            html += `<div class="review-item" style="flex-direction:column;gap:2px">
+                <div><span style="font-weight:500">${esc(o.name)}</span> <span style="font-family:monospace;font-size:0.75rem;color:var(--xps-accent)">${esc(o.codeClass)}</span> <span style="font-size:0.7rem;color:var(--xps-text-muted)">${esc(formatCategoryName(o.category))} &middot; ${esc(o.scheme)} &middot; ${esc(o.lastModified)}</span></div>
+                ${o.description ? `<div style="font-size:0.8rem;color:var(--xps-text-muted)">${esc(o.description)}</div>` : ''}
+            </div>`;
+        });
+    }
+
+    if (capabilities.length > 0) {
+        html += `<div style="font-size:0.75rem;font-weight:600;color:var(--xps-text-muted);margin-top:8px;margin-bottom:4px">CAPABILITIES</div>`;
+        capabilities.forEach(c => {
+            const parent = c.parentOption ? c.parentOption.name : '';
+            html += `<div class="review-item" style="flex-direction:column;gap:2px">
+                <div><span style="font-weight:500">${esc(c.name)}</span> <span style="font-family:monospace;font-size:0.75rem;color:var(--xps-accent)">${esc(c.methodName)}</span>${parent ? ' <span style="font-size:0.7rem;color:var(--xps-text-muted)">('+esc(parent)+')</span>' : ''} <span style="font-size:0.7rem;color:var(--xps-text-muted)">${esc(formatCategoryName(c.category))} &middot; ${esc(c.scheme)} &middot; ${esc(c.lastModified)}</span></div>
+                ${c.description ? `<div style="font-size:0.8rem;color:var(--xps-text-muted)">${esc(c.description)}</div>` : ''}
+            </div>`;
+        });
+    }
+
+    html += '</div>';
+    return html;
+}
+
+function buildCodeInventoryMarkdown() {
+    const { options, capabilities, count } = getGroupedInventory();
+    if (count === 0) return '';
+
+    let md = `## 11. Code Inventory\n\n`;
+    md += `The following code options and capabilities were found in the codebase at time of export.\n\n`;
+
+    if (options.length > 0) {
+        md += `### Options\n\n`;
+        md += `| Category | Name | Description | Code Class | Scheme | Last Modified |\n`;
+        md += `|----------|------|-------------|-----------|--------|---------------|\n`;
+        options.forEach(o => {
+            md += `| ${formatCategoryName(o.category)} | ${o.name} | ${o.description || ''} | ${o.codeClass} | ${o.scheme} | ${o.lastModified} |\n`;
+        });
+        md += '\n';
+    }
+
+    if (capabilities.length > 0) {
+        md += `### Capabilities\n\n`;
+        md += `| Category | Name | Description | Method | Parent Option | Scheme | Last Modified |\n`;
+        md += `|----------|------|-------------|--------|---------------|--------|---------------|\n`;
+        capabilities.forEach(c => {
+            const parent = c.parentOption ? c.parentOption.name : '';
+            md += `| ${formatCategoryName(c.category)} | ${c.name} | ${c.description || ''} | ${c.methodName} | ${parent} | ${c.scheme} | ${c.lastModified} |\n`;
+        });
+        md += '\n';
+    }
+
+    return md;
+}
+
+function buildCodeInventoryText() {
+    const { options, capabilities, count } = getGroupedInventory();
+    if (count === 0) return '';
+
+    let text = '-'.repeat(40) + '\nCODE INVENTORY\n' + '-'.repeat(40) + '\n';
+    text += 'Code options and capabilities found in the codebase at time of export.\n\n';
+
+    if (options.length > 0) {
+        text += '  Options:\n';
+        options.forEach(o => {
+            text += `  - [${formatCategoryName(o.category)}] ${o.name} (${o.codeClass}) — ${o.scheme}, ${o.lastModified}\n`;
+            if (o.description) text += `    ${o.description}\n`;
+        });
+        text += '\n';
+    }
+
+    if (capabilities.length > 0) {
+        text += '  Capabilities:\n';
+        capabilities.forEach(c => {
+            const parent = c.parentOption ? ` (parent: ${c.parentOption.name})` : '';
+            text += `  - [${formatCategoryName(c.category)}] ${c.name} — ${c.methodName}${parent} — ${c.scheme}, ${c.lastModified}\n`;
+            if (c.description) text += `    ${c.description}\n`;
+        });
+        text += '\n';
+    }
+
+    return text;
+}
 
 // ═══════════════════════════════════════════════════════════════
 // STEP ENGINE
@@ -1318,8 +1672,7 @@ function renderStep6(el) {
         <div class="export-bar">
             <button class="btn btn-primary" onclick="exportMarkdown()" style="background:var(--xps-purple)">&#9998; Export as Markdown</button>
             <button class="btn btn-primary" onclick="exportText()">&#128196; Export as Text</button>
-            <button class="btn btn-primary" onclick="exportPDF()">&#128195; Export as PDF</button>
-            <button class="btn btn-secondary" onclick="window.print()">&#128424; Print</button>
+<button class="btn btn-secondary" onclick="window.print()">&#128424; Print</button>
             <button class="btn btn-success" onclick="saveSpec()">&#128190; Save Spec</button>
         </div>
         <div class="step-nav">
@@ -1475,78 +1828,42 @@ function buildReviewHTML() {
         </div>`;
     }
 
+    // Code inventory
+    html += buildCodeInventoryReviewHTML();
+
     return html;
 }
 
 // ═══════════════════════════════════════════════════════════════
-// ORDER PANEL
+// HEADER SUMMARY
 // ═══════════════════════════════════════════════════════════════
 function updateOrderPanel() {
-    const body = document.getElementById('orderBody');
+    const el = document.getElementById('headerSummary');
+    if (!el) return;
     const ct = getSelectedCalcType();
-    let html = '';
+    let chips = [];
 
-    html += orderSection('Scheme', state.schemeName || null);
-    if (state.requesterName) html += orderSection('Requester', state.requesterName);
-    html += '<div class="order-divider"></div>';
-    html += orderSection('Calc Type', ct ? ct.name : null);
-
-    // Tranches summary
-    if (state.tranches.length > 0) {
-        html += `<div class="order-section">
-            <div class="order-section-title">Service Tranches (${state.tranches.length})</div>
-            <div class="order-tags">`;
-        state.tranches.forEach(t => {
-            const label = t.name || 'Untitled';
-            const cls = t.hasGMP ? 'order-tag gmp' : 'order-tag';
-            html += `<span class="${cls}">${esc(label)}</span>`;
-        });
-        html += '</div></div>';
-    }
-
-    // GMP
-    if (Object.keys(state.gmpOptions).length > 0) {
-        html += `<div class="order-section">
-            <div class="order-section-title">GMP Rules</div>
-            <div class="order-tags">`;
-        Object.keys(state.gmpOptions).forEach(key => {
-            const item = MODULE_LIBRARY.gmpHandling.find(g => g.id === key);
-            if (item) html += `<span class="order-tag gmp">${item.name}</span>`;
-        });
-        html += '</div></div>';
-    }
-
-    // Commutation
+    if (state.schemeName) chips.push(summaryChip('Scheme', esc(state.schemeName), 'accent'));
+    if (ct) chips.push(summaryChip('Calc', esc(ct.name), 'accent'));
+    if (state.tranches.length > 0) chips.push(summaryChip('Tranches', state.tranches.length));
+    if (Object.keys(state.gmpOptions).length > 0) chips.push(summaryChip('GMP', Object.keys(state.gmpOptions).length + ' rule' + (Object.keys(state.gmpOptions).length !== 1 ? 's' : ''), 'gmp'));
     if (state.commutationStyle) {
         const cs = MODULE_LIBRARY.commutationStyles.find(s => s.id === state.commutationStyle);
-        html += orderSection('Commutation', cs ? cs.name : null);
+        if (cs) chips.push(summaryChip('Commutation', esc(cs.name)));
     }
-
-    // Counts
     const valCount = state.validationsPreCalc.length + state.validationsPostCalc.length;
-    const depCount = state.dependencies.length;
-    if (valCount > 0 || depCount > 0) {
-        html += '<div class="order-divider"></div>';
-        if (valCount > 0) html += orderSection('Validations', `${valCount} check${valCount !== 1 ? 's' : ''}`);
-        if (depCount > 0) html += orderSection('Dependencies', `${depCount} item${depCount !== 1 ? 's' : ''}`);
-    }
-    if (state.notes.trim()) {
-        html += '<div class="order-divider"></div>';
-        html += orderSection('Notes', 'Included');
-    }
+    if (valCount > 0) chips.push(summaryChip('Validations', valCount));
+    if (state.dependencies.length > 0) chips.push(summaryChip('Dependencies', state.dependencies.length));
+    if (state.notes.trim()) chips.push(summaryChip('Notes', '✓'));
 
-    if (!html.trim()) html = '<p class="order-section-value empty">Start building your spec...</p>';
-    body.innerHTML = html;
+    el.innerHTML = chips.length > 0 ? chips.join('<span class="summary-sep"></span>') : '<span class="summary-empty">Start building your spec...</span>';
 
     const sub = document.getElementById('printSubtitle');
     if (sub) sub.textContent = `${state.schemeName || 'Unnamed Scheme'} | ${ct ? ct.name : 'No calc type'} | ${state.specDate}`;
 }
 
-function orderSection(title, value) {
-    return `<div class="order-section">
-        <div class="order-section-title">${title}</div>
-        <div class="order-section-value${value ? '' : ' empty'}">${value || 'Not set'}</div>
-    </div>`;
+function summaryChip(label, value, cls) {
+    return `<span class="summary-chip${cls ? ' ' + cls : ''}"><span class="chip-label">${label}</span> ${value}</span>`;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1867,6 +2184,10 @@ function exportMarkdown() {
     md += `| Coder | ${state.coderName || ''} | ${state.coderDate || ''} |\n`;
     md += `| Reviewer | ${state.reviewerName || ''} | ${state.reviewerDate || ''} |\n`;
 
+    // Code inventory
+    const inventoryMd = buildCodeInventoryMarkdown();
+    if (inventoryMd) md += '\n---\n\n' + inventoryMd;
+
     const calcSlug = ct ? ct.shortName.replace(/[^a-zA-Z0-9]/g, '_') : 'calc';
     download(md, `${calcSlug}_Spec_${slug(state.schemeName)}.md`, 'text/markdown');
 }
@@ -1997,6 +2318,9 @@ function exportText() {
         text += '\n';
     }
 
+    // Code inventory
+    text += buildCodeInventoryText();
+
     text += '='.repeat(60) + '\n';
     text += `Generated by Pension Calc Specbuilder | ${new Date().toLocaleString()}\n`;
 
@@ -2007,118 +2331,6 @@ function section(title) {
     return '-'.repeat(40) + '\n' + title + '\n' + '-'.repeat(40) + '\n';
 }
 
-function exportPDF() {
-    const { jsPDF } = window.jspdf;
-    if (!jsPDF) { alert('PDF library not loaded.'); return; }
-    const doc = new jsPDF();
-    const ct = getSelectedCalcType();
-    const margin = 20;
-    const pw = doc.internal.pageSize.getWidth() - margin * 2;
-    let y = 20;
-
-    function txt(text, size, bold, color) {
-        if (y > 270) { doc.addPage(); y = 20; }
-        doc.setFontSize(size || 10);
-        doc.setFont('helvetica', bold ? 'bold' : 'normal');
-        if (color) doc.setTextColor(...color); else doc.setTextColor(30, 30, 30);
-        const lines = doc.splitTextToSize(text, pw);
-        doc.text(lines, margin, y);
-        y += lines.length * (size ? size * 0.5 : 5) + 2;
-    }
-    function sec(title) {
-        y += 4;
-        if (y > 260) { doc.addPage(); y = 20; }
-        doc.setDrawColor(74, 159, 217);
-        doc.setLineWidth(0.5);
-        doc.line(margin, y, margin + pw, y);
-        y += 6;
-        txt(title, 12, true, [74, 159, 217]);
-    }
-
-    txt('PENSION CALC SPEC SHEET', 18, true, [74, 159, 217]);
-    y += 4;
-
-    const pdfStatusLabels = { draft: 'Draft', review: 'Review', approved: 'Approved' };
-    sec('Scheme Information');
-    txt(`Scheme: ${state.schemeName || 'Not set'}`, 10);
-    txt(`Requester: ${state.requesterName || 'Not set'}`, 10);
-    txt(`Date: ${state.specDate}  |  Version: ${state.specVersion}  |  Status: ${pdfStatusLabels[state.specStatus] || state.specStatus}`, 10);
-    if (state.validCategories.trim()) txt(`Valid Categories: ${state.validCategories}`, 9, false, [80,80,80]);
-
-    sec('Calculation Type');
-    txt(ct ? ct.name : 'Not selected', 11, true);
-
-    sec('Service Tranches');
-    state.tranches.forEach((t, idx) => {
-        const bt = MODULE_LIBRARY.benefitTypes.find(b => b.id === t.benefitType);
-        const ar = MODULE_LIBRARY.accrualRates.find(a => a.id === t.accrualRate);
-        const rv = MODULE_LIBRARY.revaluationMethods.find(r => r.id === t.revaluation);
-        const rf = MODULE_LIBRARY.retirementFactorTypes.find(f => f.id === t.retirementFactor);
-        const pdfUpload = { yes: 'Uploaded', no: 'Not yet', tbc: 'TBC' };
-        txt(`Tranche ${idx+1}: ${t.name || 'Untitled'}`, 10, true);
-        txt(`NPA: ${t.npa} | ${bt?bt.name:'?'} | ${ar?ar.name:'?'} | ${rv?rv.name:'?'} | ${rf?rf.name:'?'}${t.hasGMP?' | GMP':''}`, 9, false, [100,100,100]);
-        if (t.afrRate) txt(`AFR: ${t.afrRate}`, 9, false, [80,80,80]);
-        if (t.erfTableKey) txt(`ERF: ${t.erfTableKey} (${pdfUpload[t.erfUploadStatus]||'TBC'})${t.lrfTableKey ? '  |  LRF: '+t.lrfTableKey+' ('+( pdfUpload[t.lrfUploadStatus]||'TBC')+')' : ''}`, 9, false, [80,80,80]);
-        if (t.elementKeys.trim()) txt(`Elements: ${t.elementKeys}`, 9, false, [80,80,80]);
-        if (t.elementRollup.trim()) txt(`Roll-up: ${t.elementRollup}`, 9, false, [80,80,80]);
-        y += 2;
-    });
-
-    if (hasGMP()) {
-        const pdfMonths = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-        const pdfGmpRule = state.gmpRetFactorRule === 'apply_erf' ? 'Apply ERF/LRF after GMP age' : 'No ERF/LRF after GMP age';
-        sec('GMP & Special Rules');
-        txt(`GMP Increase Date: ${state.gmpIncreaseDay} ${pdfMonths[(parseInt(state.gmpIncreaseMonth)||4)-1]}  |  s109: ${state.s109Rate || 'Not set'}`, 10);
-        txt(`Ret. Factor Rule: ${pdfGmpRule}`, 10);
-        if (state.post88GmpElementKeys.trim()) txt(`POST88 GMP Keys: ${state.post88GmpElementKeys}`, 9, false, [80,80,80]);
-        Object.entries(state.gmpOptions).forEach(([key, val]) => {
-            const item = MODULE_LIBRARY.gmpHandling.find(g => g.id === key);
-            if (item) {
-                let detail = '';
-                if (val !== true) { const sub = (item.methods||item.options||[]).find(m=>m.id===val); if(sub) detail=` \u2014 ${sub.name}`; }
-                txt(`\u2022 ${item.name}${detail}`, 10);
-            }
-        });
-    }
-
-    if (state.commutationStyle) {
-        const cs = MODULE_LIBRARY.commutationStyles.find(s => s.id === state.commutationStyle);
-        sec('Commutation / PCLS');
-        txt(`Style: ${cs ? cs.name : '?'}  |  Spouse %: ${state.spousePensionPct}%  |  Rounding: ${state.commutationRounding}dp`, 10);
-        txt(`DC in Cash: ${state.dcFundInCash==='yes'?'Yes':'No'}  |  Spouse GMP Min: ${state.spouseGmpMinimum==='nil_pre88'?'Nil Pre-88':'50% all GMP'}`, 10);
-        if (state.commutationFactorTableKey) txt(`Factor Table: ${state.commutationFactorTableKey}`, 9, false, [80,80,80]);
-    }
-
-    sec('Validations');
-    state.validationsPreCalc.forEach(vid => {
-        const v = MODULE_LIBRARY.validations.preCalc.find(x => x.id === vid);
-        if (v) txt(`\u2022 [Error] ${v.name}`, 10);
-    });
-    state.validationsPostCalc.forEach(vid => {
-        const v = MODULE_LIBRARY.validations.postCalc.find(x => x.id === vid);
-        if (v) txt(`\u2022 [Warning] ${v.name}`, 10);
-    });
-
-    sec('Dependencies & Setup');
-    state.dependencies.forEach(did => {
-        const d = MODULE_LIBRARY.dependencies.find(x => x.id === did);
-        if (d) txt(`\u2022 [${d.category}] ${d.name}`, 10);
-    });
-
-    if (state.notes.trim()) { sec('Additional Notes'); txt(state.notes, 10); }
-
-    const pdfHasSignOff = state.analystName || state.coderName || state.reviewerName;
-    if (pdfHasSignOff) {
-        sec('Sign-Off');
-        if (state.analystName) txt(`Analyst: ${state.analystName}${state.analystDate ? ' ('+state.analystDate+')' : ''}`, 10);
-        if (state.coderName) txt(`Coder: ${state.coderName}${state.coderDate ? ' ('+state.coderDate+')' : ''}`, 10);
-        if (state.reviewerName) txt(`Reviewer: ${state.reviewerName}${state.reviewerDate ? ' ('+state.reviewerDate+')' : ''}`, 10);
-    }
-
-    y += 8;
-    txt(`Generated by Pension Calc Specbuilder | ${new Date().toLocaleString()}`, 8, false, [150, 150, 150]);
-    doc.save(`spec-${slug(state.schemeName)}-${state.specDate}.pdf`);
-}
 
 // ═══════════════════════════════════════════════════════════════
 // SAVE / LOAD
@@ -2233,6 +2445,7 @@ function download(content, filename, type) {
     const hash = parseInt(window.location.hash.replace('#', ''));
     if (!isNaN(hash) && hash >= 0 && hash < STEPS.length) state.currentStep = hash;
     goToStep(state.currentStep);
+    loadCodeInventory();
 })();
 
 document.getElementById('loadModal').addEventListener('click', function(e) {
