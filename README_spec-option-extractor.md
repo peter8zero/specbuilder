@@ -592,3 +592,21 @@ python3 extract_spec_options.py input.json --json -o ../code-options.js -c ../co
 3. Re-run the extractor — the new category appears automatically in the specbuilder.
 
 No changes needed to `index.html`, `module-library.js`, or the extractor script.
+
+---
+
+## Why Attributes over XML Comments
+
+The alternative approach is to use XML doc comments (`/// <spec-option ...>`) instead of custom attributes. Here's why attributes are the better choice:
+
+1. **Compiler-validated** — typos in attribute properties (e.g. `Categroy` instead of `Category`) are caught at build time. XML comments are free-text; errors are silent and only surface when the extractor skips the entry.
+
+2. **Refactor-safe** — attributes move with the class when it's renamed or relocated. IDE refactoring tools don't update content inside XML comments, so they drift out of sync.
+
+3. **Testable** — a unit test can reflect over the assembly and assert that every calculation option class has a `[SpecOption]` attribute. You can't write a test that verifies correct XML comments exist above each class.
+
+4. **Runtime-readable** — if the calc engine ever needs a `/capabilities` endpoint or self-describing API, reflection gives you the inventory for free. XML comments are stripped at compile time and don't exist in the binary.
+
+5. **Reliable to parse** — attribute syntax is rigid and predictable. Parsing XML embedded inside `///` comments is fragile, with multiline handling, escaping edge cases, and interference from actual XML doc comments on the same class.
+
+Attributes are no more work for developers than XML comments — one line above the class — but with guarantees that comments can't provide.
