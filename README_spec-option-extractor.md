@@ -387,60 +387,46 @@ function loadCodeInventory() {
 
 ### The Code Inventory panel
 
-The panel appears below the "Your Order" card in the right sidebar:
+The panel occupies the right sidebar and includes a search filter and collapsible categories:
 
 ```
-┌─────────────────────────┐
-│ Your Order              │
-│ ...                     │
-└─────────────────────────┘
-
-┌─────────────────────────┐
-│ ▸ Code Inventory    7   │  ← collapsed by default
-└─────────────────────────┘
+┌──────────────────────────────┐
+│ ▾ Code Inventory          7  │
+├──────────────────────────────┤
+│ ┌──────────────────────────┐ │
+│ │ Filter inventory...      │ │
+│ └──────────────────────────┘ │
+│                              │
+│ ▾ COMMUTATION (1)            │
+│ • Trivial Commutation        │
+│   Full commutation of small  │
+│   pots below the trivial     │
+│   commutation limit.         │
+│   TrivialCommutation         │
+│   Core · 2025-09-20          │
+│                              │
+│ ▾ GMP (1)                    │
+│ • GMP Equalisation           │
+│   Applies GMP equalisation   │
+│   using the dual-record      │
+│   method per Lloyds.         │
+│   GmpEqualiser               │
+│   Core · 2025-12-01          │
+│   ┗ Anti-Franking Check      │
+│   ┗ Section 148 Reval        │
+│                              │
+│ ▸ REVALUATION (2)            │
+│ ▸ TRANSFERS (2)              │
+└──────────────────────────────┘
 ```
 
-Click to expand:
-
-```
-┌─────────────────────────┐
-│ ▾ Code Inventory    7   │
-├─────────────────────────┤
-│ COMMUTATION             │
-│ • Trivial Commutation   │
-│   TrivialCommutation    │
-│   Core · 2025-09-20     │
-│                         │
-│ GMP                     │
-│ • GMP Equalisation      │
-│   GmpEqualiser          │
-│   Core · 2025-12-01     │
-│   ┗ Anti-Franking Check │
-│   ┗ Section 148 Reval   │
-│                         │
-│ REVALUATION             │
-│ • CPI-Capped (s101)     │
-│   CpiCappedRevaluation  │
-│   Core · 2025-11-15     │
-│   ┗ Pro-rata CPI Reval  │
-│ • Fixed Rate            │
-│   FixedRateRevaluation  │
-│   Core · 2025-10-01     │
-│                         │
-│ TRANSFERS               │
-│ • Partial CETV          │
-│   CalculatePartialCetv  │
-│   Core · 2025-11-20     │
-│ • Club Transfer Value   │
-│   CalculateClubTransfer │
-│   Core · 2025-11-20     │
-└─────────────────────────┘
-```
-
-- Options are grouped by category with capabilities nested under their parent option
-- Each item shows: display name, code class/method (monospace), scheme, last modified date
-- Collapsed/expanded state is saved to localStorage
-- The panel is read-only reference — no interaction with the spec form
+- **Search filter** — type to filter items by name, description, class name, or scheme. Matching categories auto-expand.
+- **Collapsible categories** — each category can be expanded/collapsed independently. State is saved to localStorage.
+- **Descriptions shown** — the `Description` field from each `[SpecOption]` and `[SpecCapability]` is displayed below the item name, giving analysts context on what each piece of code does.
+- Each item also shows: code class/method name (monospace), scheme, and last modified date.
+- Capabilities are nested under their parent option with `┗` prefix.
+- The panel scrolls internally when the list is long (capped at 65vh).
+- The panel is read-only reference — no interaction with the spec form.
 
 ### How to use the inventory while building a spec
 
@@ -455,7 +441,7 @@ There is no formal mapping between inventory items and spec items. The analyst u
 
 ### Code Inventory in exports
 
-When exporting (Markdown, text, or PDF review), a Code Inventory section is appended at the bottom if code files were loaded.
+When exporting (Markdown, text, or review), a Code Inventory section is appended at the bottom if code files were loaded. Descriptions are included in all export formats.
 
 **Markdown export** (section 11):
 
@@ -466,22 +452,20 @@ The following code options and capabilities were found in the codebase at time o
 
 ### Options
 
-| Category | Name | Code Class | Scheme | Last Modified |
-|----------|------|-----------|--------|---------------|
-| Commutation | Trivial Commutation | TrivialCommutation | Core | 2025-09-20 |
-| GMP | GMP Equalisation (Dual Record) | GmpEqualiser | Core | 2025-12-01 |
-| Revaluation | CPI-Capped (s101) | CpiCappedRevaluation | Core | 2025-11-15 |
-| Revaluation | Fixed Rate | FixedRateRevaluation | Core | 2025-10-01 |
+| Category | Name | Description | Code Class | Scheme | Last Modified |
+|----------|------|-------------|-----------|--------|---------------|
+| Commutation | Trivial Commutation | Full commutation of small pots below the trivial commutation limit. | TrivialCommutation | Core | 2025-09-20 |
+| GMP | GMP Equalisation (Dual Record) | Applies GMP equalisation using the dual-record method per Lloyds. | GmpEqualiser | Core | 2025-12-01 |
+| Revaluation | CPI-Capped (s101) | Statutory revaluation capped at CPI rather than RPI. | CpiCappedRevaluation | Core | 2025-11-15 |
+| Revaluation | Fixed Rate | | FixedRateRevaluation | Core | 2025-10-01 |
 
 ### Capabilities
 
-| Category | Name | Method | Parent Option | Scheme | Last Modified |
-|----------|------|--------|---------------|--------|---------------|
-| GMP | Anti-Franking Check | CheckAntiFranking | GMP Equalisation (Dual Record) | Core | 2025-12-01 |
-| GMP | Section 148 Revaluation | ApplySection148 | GMP Equalisation (Dual Record) | Core | 2025-12-01 |
-| Revaluation | Pro-rata CPI Revaluation | CalculateProRata | CPI-Capped (s101) | Core | 2025-11-15 |
-| Transfers | Partial CETV | CalculatePartialCetv | | Core | 2025-11-20 |
-| Transfers | Club Transfer Value | CalculateClubTransfer | | Core | 2025-11-20 |
+| Category | Name | Description | Method | Parent Option | Scheme | Last Modified |
+|----------|------|-------------|--------|---------------|--------|---------------|
+| GMP | Anti-Franking Check | Checks whether excess pension above GMP is sufficient to cover GMP increases. | CheckAntiFranking | GMP Equalisation (Dual Record) | Core | 2025-12-01 |
+| GMP | Section 148 Revaluation | Applies s148 orders to revalue GMP between leaving and GMP pension age. | ApplySection148 | GMP Equalisation (Dual Record) | Core | 2025-12-01 |
+| Transfers | Partial CETV | | CalculatePartialCetv | | Core | 2025-11-20 |
 ```
 
 **Text export:**
@@ -494,17 +478,20 @@ Code options and capabilities found in the codebase at time of export.
 
   Options:
   - [Commutation] Trivial Commutation (TrivialCommutation) — Core, 2025-09-20
+    Full commutation of small pots below the trivial commutation limit.
   - [GMP] GMP Equalisation (GmpEqualiser) — Core, 2025-12-01
+    Applies GMP equalisation using the dual-record method per Lloyds.
   ...
 
   Capabilities:
   - [GMP] Anti-Franking Check — CheckAntiFranking (parent: GMP Equalisation) — Core, 2025-12-01
+    Checks whether excess pension above GMP is sufficient to cover GMP increases.
   ...
 ```
 
-**Review step (step 6):** The same inventory data appears at the bottom of the review sheet, visible on screen and in print.
+**Review step (step 6):** The same inventory data with descriptions appears at the bottom of the review sheet, visible on screen and in print.
 
-If no code files were loaded, all three exports omit the section entirely — the output is identical to a specbuilder without code files.
+If no code files were loaded, all export formats omit the section entirely — the output is identical to a specbuilder without code files.
 
 ---
 
