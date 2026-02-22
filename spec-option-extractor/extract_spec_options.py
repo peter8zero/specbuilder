@@ -16,9 +16,25 @@ SPEC_OPTION_RE = re.compile(
 )
 
 # Matches a named parameter like Category = "Revaluation"
-PARAM_RE = re.compile(
+PARAM_STRING_RE = re.compile(
     r'(\w+)\s*=\s*"((?:[^"\\]|\\.)*)"'
 )
+
+# Matches a named parameter using a constant like Category = SpecCategories.GMP
+PARAM_CONST_RE = re.compile(
+    r'(\w+)\s*=\s*(\w+)\.(\w+)'
+)
+
+# Known constant mappings (populated from SpecCategories.cs or hardcoded fallback)
+KNOWN_CONSTANTS = {
+    'SpecCategories': {
+        'Revaluation': 'Revaluation',
+        'Commutation': 'Commutation',
+        'GMP': 'GMP',
+        'Transfers': 'Transfers',
+        'Builder': 'Builder',
+    }
+}
 
 # Matches the class name from a class declaration following the attribute.
 # Robust: skips XML doc comments (/// ...), other attributes ([...]),
@@ -55,6 +71,32 @@ PUBLIC_METHOD_RE = re.compile(
 )
 
 
+def extract_params(body):
+    """Extract named parameters from an attribute body string.
+
+    Handles both string literals (Category = "GMP") and constant references
+    (Category = SpecCategories.GMP).
+    """
+    fields = {}
+    # First pass: string literal values like Name = "CPI-Capped (s101)"
+    for m in PARAM_STRING_RE.finditer(body):
+        fields[m.group(1)] = m.group(2)
+    # Second pass: constant references like Category = SpecCategories.GMP
+    for m in PARAM_CONST_RE.finditer(body):
+        param_name = m.group(1)
+        if param_name in fields:
+            continue  # string literal already matched (takes priority)
+        class_name = m.group(2)
+        member_name = m.group(3)
+        resolved = KNOWN_CONSTANTS.get(class_name, {}).get(member_name)
+        if resolved:
+            fields[param_name] = resolved
+        else:
+            # Use the member name as-is if not in known constants
+            fields[param_name] = member_name
+    return fields
+
+
 def parse_spec_option(code):
     """Extract SpecOption fields and class name from a C# code string.
 
@@ -64,10 +106,7 @@ def parse_spec_option(code):
     if not match:
         return None
 
-    body = match.group(1)
-    fields = {}
-    for param_match in PARAM_RE.finditer(body):
-        fields[param_match.group(1)] = param_match.group(2)
+    fields = extract_params(match.group(1))
 
     if 'Category' not in fields or 'Name' not in fields:
         return None
@@ -224,9 +263,7 @@ def parse_spec_capabilities(code):
     results = []
     for match in SPEC_CAPABILITY_RE.finditer(code):
         body = match.group(1)
-        fields = {}
-        for param_match in PARAM_RE.finditer(body):
-            fields[param_match.group(1)] = param_match.group(2)
+        fields = extract_params(body)
 
         if 'Category' not in fields or 'Name' not in fields:
             continue

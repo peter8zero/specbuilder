@@ -9,6 +9,7 @@ import tempfile
 import unittest
 
 from extract_spec_options import (
+    extract_params,
     parse_spec_option,
     parse_spec_capabilities,
     process_modules,
@@ -895,6 +896,88 @@ class TestRobustParsing(unittest.TestCase):
         result = parse_spec_option(code)
         self.assertIsNotNone(result)
         self.assertEqual(result['CodeClass'], 'AbstractGmp')
+
+
+class TestConstantReferences(unittest.TestCase):
+    """Tests for parsing constant references like SpecCategories.GMP instead of string literals."""
+
+    def test_extract_params_string_literal(self):
+        body = 'Category = "GMP", Name = "Basic GMP"'
+        fields = extract_params(body)
+        self.assertEqual(fields['Category'], 'GMP')
+        self.assertEqual(fields['Name'], 'Basic GMP')
+
+    def test_extract_params_constant_reference(self):
+        body = 'Category = SpecCategories.GMP, Name = "Basic GMP"'
+        fields = extract_params(body)
+        self.assertEqual(fields['Category'], 'GMP')
+        self.assertEqual(fields['Name'], 'Basic GMP')
+
+    def test_extract_params_unknown_constant_uses_member_name(self):
+        body = 'Category = UnknownClass.SomeValue, Name = "Test"'
+        fields = extract_params(body)
+        self.assertEqual(fields['Category'], 'SomeValue')
+
+    def test_extract_params_string_takes_priority_over_constant(self):
+        """If somehow both regexes could match, string literal wins."""
+        body = 'Category = "Revaluation", Name = "Test"'
+        fields = extract_params(body)
+        self.assertEqual(fields['Category'], 'Revaluation')
+
+    def test_spec_option_with_constant_category(self):
+        code = '''
+        [SpecOption(
+            Category = SpecCategories.GMP,
+            Name = "CPI-Capped (s101)",
+            Description = "Statutory revaluation capped at CPI rather than RPI.",
+            WhyItMatters = "The standard for post-97 deferred benefits."
+        )]
+        public abstract class RepoBaseCalculationStrategy { }
+        '''
+        result = parse_spec_option(code)
+        self.assertIsNotNone(result)
+        self.assertEqual(result['Category'], 'GMP')
+        self.assertEqual(result['Name'], 'CPI-Capped (s101)')
+        self.assertEqual(result['WhyItMatters'], 'The standard for post-97 deferred benefits.')
+        self.assertEqual(result['CodeClass'], 'RepoBaseCalculationStrategy')
+
+    def test_spec_option_all_constants(self):
+        code = '''
+        [SpecOption(Category = SpecCategories.Revaluation, Name = "Fixed Rate", Description = "Fixed rate reval.")]
+        public class FixedRateReval { }
+        '''
+        result = parse_spec_option(code)
+        self.assertIsNotNone(result)
+        self.assertEqual(result['Category'], 'Revaluation')
+
+    def test_spec_capability_with_constant_category(self):
+        code = '''
+        public class Calc {
+            [SpecCapability(Category = SpecCategories.GMP, Name = "Anti-Franking", Description = "Checks franking.")]
+            public bool CheckAntiFranking(decimal total)
+            {
+                return true;
+            }
+        }
+        '''
+        result = parse_spec_capabilities(code)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]['Category'], 'GMP')
+        self.assertEqual(result[0]['Name'], 'Anti-Franking')
+        self.assertEqual(result[0]['methodName'], 'CheckAntiFranking')
+
+    def test_process_modules_with_constant_category(self):
+        modules = [
+            {
+                'moduleName': 'Test',
+                'scheme': 'Core',
+                'code': '[SpecOption(Category = SpecCategories.Commutation, Name = "Trivial", Description = "Trivial commutation.")]\npublic class TrivialCommutation { }',
+                'lastModified': '2025-01-01T00:00:00'
+            },
+        ]
+        result = process_modules(modules)
+        self.assertIn('commutation', result)
+        self.assertEqual(result['commutation'][0]['name'], 'Trivial')
 
 
 class TestEndToEnd(unittest.TestCase):
