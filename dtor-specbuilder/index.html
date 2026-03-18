@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DtoR Spec Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #141414; --card: #1c1c1c; --border: #2e2e2e;
+  --text: #e8e8e8; --muted: #888; --accent: #4A9FD9;
+  --accent2: #e07a2f; --danger: #c0392b; --success: #27ae60;
+  --input-bg: #111; --sidebar-w: 220px;
+}
+[data-theme="light"] {
+  --bg: #f0f2f4; --card: #fff; --border: #ddd;
+  --text: #1e2528; --muted: #666; --input-bg: #fff;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scrollbar-gutter: stable; font-size: 14px; }
+body { font-family: Inter, system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+/* ── Header ── */
+#header {
+  display: flex; align-items: center; gap: 12px; padding: 10px 16px;
+  background: var(--card); border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 100; flex-shrink: 0;
+}
+#header h1 { font-size: 15px; font-weight: 600; color: var(--accent); white-space: nowrap; }
+#scheme-chip { font-size: 13px; color: var(--muted); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.btn { padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; font-family: inherit; font-weight: 500; transition: opacity .15s; }
+.btn:hover { opacity: 0.85; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-success { background: var(--success); color: #fff; }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+.btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+.btn-danger { background: var(--danger); color: #fff; }
+
+/* ── Layout ── */
+#layout { display: flex; flex: 1; overflow: hidden; }
+
+/* ── Sidebar ── */
+#sidebar {
+  width: var(--sidebar-w); flex-shrink: 0; background: var(--card);
+  border-right: 1px solid var(--border); overflow-y: auto; padding: 12px 0;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 8px; padding: 7px 16px;
+  cursor: pointer; font-size: 13px; color: var(--muted); transition: all .15s;
+  border-left: 3px solid transparent; text-decoration: none;
+}
+.nav-item:hover { background: var(--bg); color: var(--text); }
+.nav-item.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg); }
+.nav-num { font-size: 11px; font-weight: 600; background: var(--border); color: var(--muted); border-radius: 3px; padding: 1px 5px; min-width: 20px; text-align: center; }
+.nav-item.active .nav-num { background: var(--accent); color: #fff; }
+
+/* ── Main content ── */
+#main { flex: 1; overflow-y: auto; padding: 24px; }
+
+/* ── Section cards ── */
+.spec-section { margin-bottom: 32px; scroll-margin-top: 16px; }
+.section-header {
+  display: flex; align-items: center; gap: 10px;
+  padding-bottom: 10px; border-bottom: 2px solid var(--border); margin-bottom: 18px;
+}
+.section-num { background: var(--accent); color: #fff; font-size: 12px; font-weight: 700; border-radius: 4px; padding: 2px 8px; }
+.section-title { font-size: 15px; font-weight: 600; }
+.section-sub { font-size: 13px; color: var(--muted); margin-left: auto; }
+
+/* ── Form elements ── */
+.form-group { margin-bottom: 16px; }
+.form-label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .4px; }
+.form-input, .form-select, .form-textarea {
+  width: 100%; padding: 8px 10px; background: var(--input-bg); border: 1px solid var(--border);
+  border-radius: 6px; color: var(--text); font-family: inherit; font-size: 13px; outline: none;
+  transition: border-color .15s;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--accent); }
+.form-textarea { resize: vertical; min-height: 80px; }
+.form-row { display: grid; gap: 12px; }
+.form-row.cols-2 { grid-template-columns: 1fr 1fr; }
+.form-row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+/* ── Radio / checkbox groups ── */
+.choice-group { display: flex; flex-direction: column; gap: 8px; }
+.choice-opt { display: flex; align-items: flex-start; gap: 8px; padding: 8px 12px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; transition: border-color .15s; }
+.choice-opt:hover { border-color: var(--accent); }
+.choice-opt input[type=radio], .choice-opt input[type=checkbox] { margin-top: 2px; accent-color: var(--accent); flex-shrink: 0; }
+.choice-label { font-size: 13px; }
+.choice-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.other-input { margin-top: 8px; padding-left: 24px; }
+
+/* ── Conditional reveals ── */
+.reveal { display: none; }
+.reveal.shown { display: block; }
+
+/* ── Dynamic tables ── */
+.dyn-table-wrap { overflow-x: auto; margin-bottom: 8px; }
+.dyn-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 500px; }
+.dyn-table th { background: var(--border); padding: 6px 8px; text-align: left; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.dyn-table td { padding: 4px 4px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.dyn-table td input, .dyn-table td select { width: 100%; padding: 5px 6px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 4px; color: var(--text); font-family: inherit; font-size: 12px; min-width: 80px; }
+.dyn-table td input:focus, .dyn-table td select:focus { outline: none; border-color: var(--accent); }
+.dyn-table .del-btn { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 14px; padding: 2px 6px; border-radius: 4px; }
+.dyn-table .del-btn:hover { background: rgba(192,57,43,.15); }
+.add-row-btn { margin-top: 6px; }
+
+/* ── Category table blocks ── */
+.cat-block { border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin-bottom: 12px; background: var(--input-bg); }
+.cat-block-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.cat-letter { background: var(--accent2); color: #fff; font-size: 11px; font-weight: 700; border-radius: 4px; padding: 2px 8px; }
+.cat-label-input { flex: 1; padding: 6px 10px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 13px; font-family: inherit; }
+.cat-label-input:focus { outline: none; border-color: var(--accent); }
+
+/* ── Upload confirm tables ── */
+.upload-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.upload-table th { padding: 6px 10px; text-align: left; background: var(--border); color: var(--muted); font-size: 12px; }
+.upload-table td { padding: 4px 4px; border-bottom: 1px solid var(--border); }
+.upload-table td input, .upload-table td select { padding: 5px 8px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 4px; color: var(--text); font-size: 12px; font-family: inherit; width: 100%; }
+
+/* ── Helpers ── */
+.hint { font-size: 12px; color: var(--muted); margin-bottom: 10px; line-height: 1.5; }
+.hint.warning { color: var(--accent2); }
+.divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+.subsection-title { font-size: 13px; font-weight: 600; margin: 16px 0 10px; color: var(--accent); }
+.inline-row { display: flex; align-items: center; gap: 8px; }
+
+/* ── Output modal ── */
+#output-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 200; align-items: center; justify-content: center; }
+#output-modal.open { display: flex; }
+.output-box { background: var(--card); border-radius: 10px; width: 90vw; max-width: 800px; height: 85vh; display: flex; flex-direction: column; border: 1px solid var(--border); }
+.output-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+.output-header h2 { font-size: 15px; flex: 1; }
+#output-md { flex: 1; margin: 0; padding: 16px 18px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 12px; white-space: pre-wrap; word-break: break-word; background: var(--bg); color: var(--text); border: none; resize: none; width: 100%; outline: none; }
+
+/* ── Load modal ── */
+#load-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 200; align-items: center; justify-content: center; }
+#load-modal.open { display: flex; }
+.load-box { background: var(--card); border-radius: 10px; width: 500px; max-height: 60vh; display: flex; flex-direction: column; border: 1px solid var(--border); }
+.load-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+.load-header h2 { font-size: 15px; flex: 1; }
+#saved-list { flex: 1; overflow-y: auto; padding: 10px; }
+.saved-item { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); margin-bottom: 6px; }
+.saved-item:hover { border-color: var(--accent); }
+.saved-scheme { font-size: 13px; font-weight: 600; flex: 1; }
+.saved-date { font-size: 12px; color: var(--muted); }
+.saved-del { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 14px; padding: 2px 6px; }
+.empty-msg { color: var(--muted); font-size: 13px; text-align: center; padding: 24px; }
+
+@media (max-width: 700px) {
+  #sidebar { display: none; }
+  #main { padding: 16px; }
+}
+</style>
+</head>
+<body data-theme="dark">
+
+<!-- Header -->
+<div id="header">
+  <h1>D&gt;R Spec Builder</h1>
+  <span id="scheme-chip">No scheme name entered</span>
+  <button class="btn btn-ghost btn-sm" onclick="showLoadModal()">Load</button>
+  <button class="btn btn-ghost btn-sm" onclick="saveNow()">Save</button>
+  <button class="btn btn-primary btn-sm" onclick="generateMarkdown()">Generate ▶</button>
+  <button class="btn btn-ghost btn-sm" onclick="toggleTheme()" title="Toggle theme">☀</button>
+</div>
+
+<!-- Layout -->
+<div id="layout">
+
+  <!-- Sidebar nav -->
+  <nav id="sidebar">
+    <a class="nav-item active" href="#s-header" onclick="setActive(this)"><span class="nav-num">H</span> Header</a>
+    <a class="nav-item" href="#s1" onclick="setActive(this)"><span class="nav-num">1</span> Valid Categories</a>
+    <a class="nav-item" href="#s2" onclick="setActive(this)"><span class="nav-num">2</span> Deferred Elements</a>
+    <a class="nav-item" href="#s3" onclick="setActive(this)"><span class="nav-num">3</span> GMP</a>
+    <a class="nav-item" href="#s4" onclick="setActive(this)"><span class="nav-num">4</span> Retirement Factors</a>
+    <a class="nav-item" href="#s5" onclick="setActive(this)"><span class="nav-num">5</span> Pension Roll-up</a>
+    <a class="nav-item" href="#s6" onclick="setActive(this)"><span class="nav-num">6</span> Commutation / PCLS</a>
+    <a class="nav-item" href="#s7" onclick="setActive(this)"><span class="nav-num">7</span> Validations</a>
+    <a class="nav-item" href="#s9" onclick="setActive(this)"><span class="nav-num">9</span> Misc Notes</a>
+    <a class="nav-item" href="#s10" onclick="setActive(this)"><span class="nav-num">10</span> Sign-Off</a>
+  </nav>
+
+  <!-- Main form -->
+  <div id="main">
+
+    <!-- Header / meta -->
+    <div class="spec-section" id="s-header">
+      <div class="section-header">
+        <span class="section-num">H</span>
+        <span class="section-title">Spec Header</span>
+      </div>
+      <div class="form-row cols-3">
+        <div class="form-group">
+          <label class="form-label">Scheme Name</label>
+          <input class="form-input" id="f-scheme" placeholder="e.g. SchemeABC" oninput="state.scheme=this.value;updateChip();autoSave()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Author</label>
+          <input class="form-input" id="f-author" placeholder="Full name" oninput="state.author=this.value;autoSave()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date</label>
+          <input class="form-input" type="date" id="f-date" oninput="state.date=this.value;autoSave()">
+        </div>
+      </div>
+      <div class="form-row cols-2">
+        <div class="form-group">
+          <label class="form-label">Version</label>
+          <input class="form-input" id="f-version" value="1.0" oninput="state.version=this.value;autoSave()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select class="form-select" id="f-status" onchange="state.status=this.value;autoSave()">
+            <option>Draft</option><option>Review</option><option>Approved</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 1: Valid Categories -->
+    <div class="spec-section" id="s1">
+      <div class="section-header">
+        <span class="section-num">1</span>
+        <span class="section-title">Valid Categories</span>
+        <span class="section-sub">dtor.cs: Validation 1</span>
+      </div>
+      <p class="hint">Keys must match those available in the Aurora Client.</p>
+      <div class="dyn-table-wrap">
+        <table class="dyn-table" id="cat-table">
+          <thead><tr><th>Category Key (Per Aurora)</th><th>Description</th><th></th></tr></thead>
+          <tbody id="cat-tbody"></tbody>
+        </table>
+      </div>
+      <button class="btn btn-ghost btn-sm add-row-btn" onclick="addCatRow()">+ Add row</button>
+    </div>
+
+    <!-- Section 2: Deferred Elements -->
+    <div class="spec-section" id="s2">
+      <div class="section-header">
+        <span class="section-num">2</span>
+        <span class="section-title">Deferred Elements</span>
+        <span class="section-sub">dtor.cs: Section G</span>
+      </div>
+      <p class="hint">List every deferred element key and its revaluation type. Add one table per category group.</p>
+
+      <div class="subsection-title">2.1 Revaluation Tables</div>
+      <div id="reval-blocks"></div>
+      <button class="btn btn-ghost btn-sm" onclick="addCatBlock('revalBlocks','reval-blocks',revalRowDef,revalColDef)">+ Add category table</button>
+
+      <hr class="divider">
+      <div class="subsection-title">2.2 AFR Reference Values</div>
+      <div class="dyn-table-wrap">
+        <table class="dyn-table">
+          <thead><tr><th>Reference Key</th><th>Value</th><th>Used for</th><th></th></tr></thead>
+          <tbody id="afr-tbody"></tbody>
+        </table>
+      </div>
+      <button class="btn btn-ghost btn-sm add-row-btn" onclick="addAfrRow()">+ Add row</button>
+    </div>
+
+    <!-- Section 3: GMP -->
+    <div class="spec-section" id="s3">
+      <div class="section-header">
+        <span class="section-num">3</span>
+        <span class="section-title">GMP</span>
+        <span class="section-sub">dtor.cs: SetupCalculationProperties, GMPREVAL</span>
+      </div>
+
+      <div class="subsection-title">3.1.1 General Set Up</div>
+
+      <div class="form-group">
+        <label class="form-label">GMP Restriction based on</label>
+        <div class="choice-group">
+          <label class="choice-opt"><input type="radio" name="gmpRestriction" value="retirement_date" onchange="state.gmpRestrictionBasis=this.value;toggleOther('gmpRestrictionOther',false);autoSave()" checked><div><div class="choice-label">Total GMP at Retirement Date</div></div></label>
+          <label class="choice-opt"><input type="radio" name="gmpRestriction" value="gmp_date" onchange="state.gmpRestrictionBasis=this.value;toggleOther('gmpRestrictionOther',false);autoSave()"><div><div class="choice-label">Total GMP at GMP Date</div></div></label>
+          <label class="choice-opt"><input type="radio" name="gmpRestriction" value="other" onchange="state.gmpRestrictionBasis=this.value;toggleOther('gmpRestrictionOther',true);autoSave()"><div><div class="choice-label">Other</div></div></label>
+        </div>
+        <div class="other-input reveal" id="gmpRestrictionOther">
+          <input class="form-input" placeholder="Please specify..." oninput="state.gmpRestrictionBasisOther=this.value;autoSave()">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">PRE97 Excess Element</label>
+        <div class="choice-group">
+          <label class="choice-opt"><input type="radio" name="pre97" value="PRE97" onchange="state.pre97Element=this.value;toggleOther('pre97Other',false);autoSave()" checked><div><div class="choice-label">"PRE97"</div></div></label>
+          <label class="choice-opt"><input type="radio" name="pre97" value="other" onchange="state.pre97Element=this.value;toggleOther('pre97Other',true);autoSave()"><div><div class="choice-label">Other</div></div></label>
+        </div>
+        <div class="other-input reveal" id="pre97Other">
+          <input class="form-input" placeholder="Please specify..." oninput="state.pre97Other=this.value;autoSave()">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">GMP Revaluation Basis</label>
+        <div class="choice-group">
+          <label class="choice-opt"><input type="radio" name="gmpRevalBasis" value="6_aprils" onchange="state.gmpRevalBasis=this.value;autoSave()" checked><div><div class="choice-label">6 Aprils</div></div></label>
+          <label class="choice-opt"><input type="radio" name="gmpRevalBasis" value="complete_tax_years" onchange="state.gmpRevalBasis=this.value;autoSave()"><div><div class="choice-label">Complete Tax Years</div></div></label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Date GMP is calculated up to</label>
+        <div class="choice-group">
+          <label class="choice-opt"><input type="radio" name="gmpDateCalcTo" value="retirement_date" onchange="state.gmpDateCalcTo=this.value;toggleOther('gmpDateCalcToOther',false);autoSave()" checked><div><div class="choice-label">Date of Retirement</div></div></label>
+          <label class="choice-opt"><input type="radio" name="gmpDateCalcTo" value="other" onchange="state.gmpDateCalcTo=this.value;toggleOther('gmpDateCalcToOther',true);autoSave()"><div><div class="choice-label">Other</div></div></label>
+        </div>
+        <div class="other-input reveal" id="gmpDateCalcToOther">
+          <input class="form-input" placeholder="Please specify..." oninput="state.gmpDateCalcToOther=this.value;autoSave()">
+        </div>
+      </div>
+
+      <hr class="divider">
+      <div class="subsection-title">3.1.2 GMP Revaluation Formula</div>
+
+      <div class="form-group">
+        <div class="choice-group">
+          <label class="choice-opt"><input type="radio" name="gmpFormula" value="confirmed" onchange="state.gmpFormula=this.value;toggleOther('gmpFormulaOther',false);autoSave()" checked><div><div class="choice-label">Confirmed — standard formulas apply</div><div class="choice-sub">POST88: (Weekly × Reval × Missed Inc × Increments, rounded) × 52 × RF &nbsp;|&nbsp; PRE88: (Weekly × Reval × Increments, rounded) × 52 × RF</div></div></label>
+          <label class="choice-opt"><input type="radio" name="gmpFormula" value="other" onchange="state.gmpFormula=this.value;toggleOther('gmpFormulaOther',true);autoSave()"><div><div class="choice-label">Other Formula</div></div></label>
+        </div>
+        <div class="other-input reveal" id="gmpFormulaOther">
+          <textarea class="form-textarea" placeholder="Please give detail..." oninput="state.gmpFormulaOther=this.value;autoSave()"></textarea>
+        </div>
+      </div>
+
+      <hr class="divider">
+      <div class="subsection-title">3.1.3 GMP Missed Increase Rules</div>
+
+      <div class="form-group">
+        <label class="form-label">Date missed increases calculated up to</label>
+        <div class="choice-group">
+          <label class="choice-opt"><input type="radio" name="gmpMissedTo" value="retirement_date" onchange="state.gmpMissedIncreasesTo=this.value;toggleOther('gmpMissedToOther',false);autoSave()" checked><div><div class="choice-label">Date of Retirement</div></div></label>
+          <label class="choice-opt"><input type="radio" name="gmpMissedTo" value="other" onchange="state.gmpMissedIncreasesTo=this.value;toggleOther('gmpMissedToOther',true);autoSave()"><div><div class="choice-label">Other</div></div></label>
+        </div>
+        <div class="other-input reveal" id="gmpMissedToOther">
+          <input class="form-input" placeholder="Please specify..." oninput="state.gmpMissedIncreasesToOther=this.value;autoSave()">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Date missed increases applied from</label>
+        <div class="choice-group">
+          <label class="choice-opt"><input type="radio" name="gmpMissedFrom" value="1st_april" onchange="state.gmpMissedIncreasesFrom=this.value;toggleOther('gmpMissedFromOther',false);autoSave()" checked><div><div class="choice-label">1st April</div></div></label>
+          <label class="choice-opt"><input type="radio" name="gmpMissedFrom" value="other" onchange="state.gmpMissedIncreasesFrom=this.value;toggleOther('gmpMissedFromOther',true);autoSave()"><div><div class="choice-label">Other</div></div></label>
+        </div>
+        <div class="other-input reveal" id="gmpMissedFromOther">
+          <input class="form-input" placeholder="Please specify..." oninput="state.gmpMissedIncreasesFromOther=this.value;autoSave()">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Assumed future increases (if GMPINC not yet provided)</label>
+        <div class="choice-group">
+          <label class="choice-opt"><input type="radio" name="gmpFutureInc" value="no_increase" onchange="state.gmpFutureIncreases=this.value;toggleOther('gmpFutureIncOther',false);autoSave()" checked><div><div class="choice-label">No increase (1.0)</div></div></label>
+          <label class="choice-opt"><input type="radio" name="gmpFutureInc" value="3_percent" onchange="state.gmpFutureIncreases=this.value;toggleOther('gmpFutureIncOther',false);autoSave()"><div><div class="choice-label">3%</div></div></label>
+          <label class="choice-opt"><input type="radio" name="gmpFutureInc" value="other" onchange="state.gmpFutureIncreases=this.value;toggleOther('gmpFutureIncOther',true);autoSave()"><div><div class="choice-label">Other</div></div></label>
+        </div>
+        <div class="other-input reveal" id="gmpFutureIncOther">
+          <input class="form-input" placeholder="Please specify..." oninput="state.gmpFutureIncreasesOther=this.value;autoSave()">
+        </div>
+      </div>
+
+      <hr class="divider">
+      <div class="subsection-title">3.1.4 GMP Increments Rules (s148)</div>
+
+      <div class="form-group">
+        <label class="form-label">Date increments calculated up to</label>
+        <div class="choice-group">
+          <label class="choice-opt"><input type="radio" name="gmpIncTo" value="retirement_date" onchange="state.gmpIncrementsTo=this.value;toggleOther('gmpIncToOther',false);autoSave()" checked><div><div class="choice-label">Date of Retirement</div></div></label>
+          <label class="choice-opt"><input type="radio" name="gmpIncTo" value="other" onchange="state.gmpIncrementsTo=this.value;toggleOther('gmpIncToOther',true);autoSave()"><div><div class="choice-label">Other</div></div></label>
+        </div>
+        <div class="other-input reveal" id="gmpIncToOther">
+          <input class="form-input" placeholder="Please specify..." oninput="state.gmpIncrementsTOther=this.value;autoSave()">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Increments capped at 260 weeks?</label>
+        <div class="choice-group">
+          <label class="choice-opt"><input type="radio" name="gmpCapped" value="yes" onchange="state.gmpIncrementsCapped=this.value;autoSave()" checked><div><div class="choice-label">Yes</div></div></label>
+          <label class="choice-opt"><input type="radio" name="gmpCapped" value="no" onchange="state.gmpIncrementsCapped=this.value;autoSave()"><div><div class="choice-label">No</div></div></label>
+        </div>
+      </div>
+
+      <hr class="divider">
+      <div class="subsection-title">3.1.5 GMP Increases Table (GMPINC)</div>
+      <div class="form-row cols-2">
+        <div class="form-group">
+          <label class="form-label">Factor Table Key</label>
+          <input class="form-input" id="f-gmpIncKey" value="GMPINC" oninput="state.gmpIncTableKey=this.value;autoSave()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Uploaded?</label>
+          <select class="form-select" onchange="state.gmpIncUploaded=this.value;autoSave()">
+            <option>TBC</option><option>Yes</option><option>No</option>
+          </select>
+        </div>
+      </div>
+
+      <hr class="divider">
+      <div class="subsection-title">3.2.1 Alternative Late Retirement Factors (GMP)</div>
+
+      <div class="form-group">
+        <label class="form-label">Does the scheme use GMP LRF factors or underpin check?</label>
+        <div class="choice-group">
+          <label class="choice-opt"><input type="radio" name="gmpLRF" value="yes" onchange="state.gmpLRFApplicable=this.value;toggleReveal('gmpLRFSection',true);autoSave()"><div><div class="choice-label">Yes — fill out table below</div></div></label>
+          <label class="choice-opt"><input type="radio" name="gmpLRF" value="no" onchange="state.gmpLRFApplicable=this.value;toggleReveal('gmpLRFSection',false);autoSave()" checked><div><div class="choice-label">No — move on to Section 4</div></div></label>
+        </div>
+      </div>
+      <div class="reveal" id="gmpLRFSection">
+        <div class="subsection-title">Table 3.2.1A: GMP LRFs</div>
+        <div class="dyn-table-wrap">
+          <table class="dyn-table">
+            <thead><tr><th>Deferred GMP Element Key</th><th>Reval Rate Type</th><th>Reval End (M)</th><th>Reval End (F)</th><th>LRF Rules</th><th>LRF Table (M)</th><th>LRF Table (F)</th><th></th></tr></thead>
+            <tbody id="gmpLRF-tbody"></tbody>
+          </table>
+        </div>
+        <button class="btn btn-ghost btn-sm add-row-btn" onclick="addGmpLrfRow()">+ Add row</button>
+      </div>
+
+      <hr class="divider">
+      <div class="subsection-title">3.3 Additional Notes (GMP)</div>
+      <textarea class="form-textarea" placeholder="Any additional notes regarding non-standard GMP..." oninput="state.gmpAdditionalNotes=this.value;autoSave()"></textarea>
+    </div>
+
+    <!-- Section 4: Retirement Factors -->
+    <div class="spec-section" id="s4">
+      <div class="section-header">
+        <span class="section-num">4</span>
+        <span class="section-title">Retirement Factors</span>
+        <span class="section-sub">dtor.cs: Validation 2, CallReusableFunctions</span>
+      </div>
+
+      <div class="subsection-title">4.1 Basis</div>
+      <div class="form-group">
+        <div class="choice-group">
+          <label class="choice-opt"><input type="radio" name="rfBasis" value="age_attained" onchange="state.retirementFactorBasis=this.value;autoSave()" checked><div><div class="choice-label">Age Attained Basis</div><div class="choice-sub">Period = full months attained at DOR</div></div></label>
+          <label class="choice-opt"><input type="radio" name="rfBasis" value="term" onchange="state.retirementFactorBasis=this.value;autoSave()"><div><div class="choice-label">Term Basis</div><div class="choice-sub">Period = calendar months between dates</div></div></label>
+        </div>
+      </div>
+
+      <hr class="divider">
+      <div class="subsection-title">4.2.1 Early Retirement Factors (ERF) — per category</div>
+      <p class="hint">Application Date = date from which ERFs are applied (e.g. NPD for NPA-based ERFs).</p>
+      <div id="erf-blocks"></div>
+      <button class="btn btn-ghost btn-sm" onclick="addCatBlock('erfBlocks','erf-blocks',erfRowDef,erfColDef)">+ Add category table</button>
+
+      <hr class="divider">
+      <div class="subsection-title">4.2.2 ERF Table Upload Confirmation</div>
+      <div class="dyn-table-wrap">
+        <table class="upload-table">
+          <thead><tr><th>Table Key (per Aurora)</th><th>Uploaded? (Y/N/TBC)</th><th></th></tr></thead>
+          <tbody id="erf-upload-tbody"></tbody>
+        </table>
+      </div>
+      <button class="btn btn-ghost btn-sm add-row-btn" onclick="addUploadRow('erf-upload-tbody','erfUploadTable')">+ Add table key</button>
+
+      <hr class="divider">
+      <div class="subsection-title">4.3.1 Late Retirement Factors (LRF) — per category</div>
+      <p class="hint">Application Date = date from which LRFs are applied (e.g. date member reaches NPA).</p>
+      <div id="lrf-blocks"></div>
+      <button class="btn btn-ghost btn-sm" onclick="addCatBlock('lrfBlocks','lrf-blocks',lrfRowDef,lrfColDef)">+ Add category table</button>
+
+      <hr class="divider">
+      <div class="subsection-title">4.3.2 LRF Table Upload Confirmation</div>
+      <div class="dyn-table-wrap">
+        <table class="upload-table">
+          <thead><tr><th>Table Key (per Aurora)</th><th>Uploaded? (Y/N/TBC)</th><th></th></tr></thead>
+          <tbody id="lrf-upload-tbody"></tbody>
+        </table>
+      </div>
+      <button class="btn btn-ghost btn-sm add-row-btn" onclick="addUploadRow('lrf-upload-tbody','lrfUploadTable')">+ Add table key</button>
+
+      <hr class="divider">
+      <div class="subsection-title">4.4 Additional Notes</div>
+      <textarea class="form-textarea" placeholder='Write "Standard" if all elements follow the standard formula, or describe any differences...' oninput="state.retirementFactorNotes=this.value;autoSave()"></textarea>
+    </div>
+
+    <!-- Section 5: Pension Element Roll-up -->
+    <div class="spec-section" id="s5">
+      <div class="section-header">
+        <span class="section-num">5</span>
+        <span class="section-title">Pension Element Roll-up</span>
+        <span class="section-sub">dtor.cs: Step 3b</span>
+      </div>
+
+      <div class="subsection-title">5.1 Pension Element Dictionary — per category</div>
+      <p class="hint">Map deferred element keys to pension element keys. Use Aurora keys throughout.</p>
+      <div id="pe-blocks"></div>
+      <button class="btn btn-ghost btn-sm" onclick="addCatBlock('peBlocks','pe-blocks',peRowDef,peColDef)">+ Add category table</button>
+
+      <hr class="divider">
+      <div class="subsection-title">5.2 Additional Notes</div>
+      <textarea class="form-textarea" placeholder="Anything non-standard about the roll-up from deferred to pension elements?" oninput="state.pensionElementNotes=this.value;autoSave()"></textarea>
+    </div>
+
+    <!-- Section 6: Commutation / PCLS -->
+    <div class="spec-section" id="s6">
+      <div class="section-header">
+        <span class="section-num">6</span>
+        <span class="section-title">Commutation / PCLS</span>
+        <span class="section-sub">dtor.cs: Step 4</span>
+      </div>
+
+      <div class="subsection-title">6.1 Commutation Factors</div>
+      <div class="form-group">
+        <label class="form-label">Single CF table for all elements?</label>
+        <div class="choice-group">
+          <label class="choice-opt"><input type="radio" name="singleCF" value="yes" onchange="state.singleCF=this.value;toggleReveal('singleCFInput',true);toggleReveal('multiCFBlocks',false);autoSave()" checked><div><div class="choice-label">Yes — single CF table</div></div></label>
+          <label class="choice-opt"><input type="radio" name="singleCF" value="no" onchange="state.singleCF=this.value;toggleReveal('singleCFInput',false);toggleReveal('multiCFBlocks',true);autoSave()"><div><div class="choice-label">No — multiple CF tables</div></div></label>
+        </div>
+      </div>
+      <div class="reveal shown" id="singleCFInput">
+        <div class="form-group">
+          <label class="form-label">Single CF Table Key</label>
+          <input class="form-input" style="max-width:300px" placeholder="e.g. CF1" oninput="state.singleCFKey=this.value;autoSave()">
+        </div>
+      </div>
+      <div class="reveal" id="multiCFBlocks">
+        <div id="cf-blocks"></div>
+        <button class="btn btn-ghost btn-sm" onclick="addCatBlock('cfBlocks','cf-blocks',cfRowDef,cfColDef)">+ Add category table</button>
+      </div>
+
+      <hr class="divider">
+      <div class="subsection-title">6.2 CF Table Upload Confirmation</div>
+      <div class="dyn-table-wrap">
+        <table class="upload-table">
+          <thead><tr><th>Table Key (per Aurora)</th><th>Uploaded? (Y/N/TBC)</th><th></th></tr></thead>
+          <tbody id="cf-upload-tbody"></tbody>
+        </table>
+      </div>
+      <button class="btn btn-ghost btn-sm add-row-btn" onclick="addUploadRow('cf-upload-tbody','cfUploadTable')">+ Add table key</button>
+
+      <hr class="divider">
+      <div class="subsection-title">6.3 PCLS Options Builder</div>
+      <p class="hint">The first two options are required for all schemes and cannot be deselected.</p>
+      <div class="choice-group">
+        <label class="choice-opt"><input type="checkbox" disabled checked><div><div class="choice-label">.WithCommutationFactors</div><div class="choice-sub">Required for all schemes</div></div></label>
+        <label class="choice-opt"><input type="checkbox" disabled checked><div><div class="choice-label">.WithGMPRestriction</div><div class="choice-sub">Required for all schemes</div></div></label>
+        <label class="choice-opt"><input type="checkbox" id="pcls-ordered" onchange="state.pclsOrdered=this.checked;toggleReveal('orderedSection',this.checked);autoSave()"><div><div class="choice-label">.Ordered</div><div class="choice-sub">Select if commutation is ordered (not proportional)</div></div></label>
+        <label class="choice-opt"><input type="checkbox" id="pcls-dcfund" checked onchange="state.pclsDCFund=this.checked;autoSave()"><div><div class="choice-label">.WithDCFund</div><div class="choice-sub">Assumes scheme has members with potential DC Fund — deselect if not applicable</div></div></label>
+        <label class="choice-opt"><input type="checkbox" id="pcls-spouses" onchange="state.pclsWithSpouses=this.checked;toggleReveal('spousesInput',this.checked);autoSave()"><div><div class="choice-label">.WithSpouses</div><div class="choice-sub">Select only if not 50% — defaults to 50%</div></div></label>
+        <div class="reveal" id="spousesInput" style="padding-left:24px">
+          <div class="form-group"><label class="form-label">Spouses percentage</label><input class="form-input" style="max-width:120px" placeholder="e.g. 33" oninput="state.pclsSpousesPercentage=this.value;autoSave()"></div>
+        </div>
+        <label class="choice-opt"><input type="checkbox" id="pcls-spousesgmpmin" onchange="state.pclsWithSpousesGMPMin=this.checked;toggleReveal('spousesGmpSection',this.checked);autoSave()"><div><div class="choice-label">.WithSpousesGMPMinimumOption</div><div class="choice-sub">Select if GMP spouses treatment differs from default (50% except Female Pre88GMP = 0%)</div></div></label>
+        <div class="reveal" id="spousesGmpSection" style="padding-left:24px">
+          <div class="choice-group" style="margin-top:8px">
+            <label class="choice-opt"><input type="radio" name="spousesGmpOpt" value="nil_pre88" onchange="state.pclsSpousesGMPMinOption=this.value;toggleOther('spousesGmpOther',false);autoSave()" checked><div><div class="choice-label">NilPre88GMP — all GMP nil</div></div></label>
+            <label class="choice-opt"><input type="radio" name="spousesGmpOpt" value="fifty_percent" onchange="state.pclsSpousesGMPMinOption=this.value;toggleOther('spousesGmpOther',false);autoSave()"><div><div class="choice-label">Fifty Percent — all GMP 50%</div></div></label>
+            <label class="choice-opt"><input type="radio" name="spousesGmpOpt" value="other" onchange="state.pclsSpousesGMPMinOption=this.value;toggleOther('spousesGmpOther',true);autoSave()"><div><div class="choice-label">Other</div></div></label>
+            <div class="other-input reveal" id="spousesGmpOther">
+              <textarea class="form-textarea" placeholder="Specify how to treat GMP for spouses..." oninput="state.pclsSpousesGMPMinOther=this.value;autoSave()"></textarea>
+            </div>
+          </div>
+        </div>
+        <label class="choice-opt"><input type="checkbox" id="pcls-pie" onchange="state.pclsWithPIE=this.checked;toggleReveal('pieSection',this.checked);autoSave()"><div><div class="choice-label">.WithPIE</div><div class="choice-sub">Select if PIE is applicable</div></div></label>
+        <label class="choice-opt"><input type="checkbox" id="pcls-dp" onchange="state.pclsWithDecimalPlaces=this.checked;toggleReveal('dpInput',this.checked);autoSave()"><div><div class="choice-label">.WithDecimalPlaces</div><div class="choice-sub">Select only if not 2 d.p. — defaults to 2</div></div></label>
+        <div class="reveal" id="dpInput" style="padding-left:24px">
+          <div class="form-group"><label class="form-label">Number of decimal places</label><input class="form-input" style="max-width:100px" placeholder="e.g. 4" oninput="state.pclsDecimalPlaces=this.value;autoSave()"></div>
+        </div>
+      </div>
+
+      <div class="reveal" id="orderedSection" style="margin-top:16px">
+        <div class="subsection-title">6.3.1 Order for Commutation — per category</div>
+        <div id="order-blocks"></div>
+        <button class="btn btn-ghost btn-sm" onclick="addCatBlock('orderBlocks','order-blocks',orderRowDef,orderColDef)">+ Add category table</button>
+      </div>
+
+      <div class="reveal" id="pieSection" style="margin-top:16px">
+        <div class="subsection-title">6.3.2 PIE Settings</div>
+        <div class="form-group">
+          <label class="form-label">PIE Factor Interpolation</label>
+          <div class="choice-group">
+            <label class="choice-opt"><input type="radio" name="pieInterp" value="year_month" onchange="state.pieInterpolation=this.value;toggleOther('pieInterpOther',false);autoSave()" checked><div><div class="choice-label">YearMonth</div></div></label>
+            <label class="choice-opt"><input type="radio" name="pieInterp" value="year_day" onchange="state.pieInterpolation=this.value;toggleOther('pieInterpOther',false);autoSave()"><div><div class="choice-label">YearDay</div></div></label>
+            <label class="choice-opt"><input type="radio" name="pieInterp" value="other" onchange="state.pieInterpolation=this.value;toggleOther('pieInterpOther',true);autoSave()"><div><div class="choice-label">Other</div></div></label>
+          </div>
+          <div class="other-input reveal" id="pieInterpOther">
+            <input class="form-input" placeholder="Please specify..." oninput="state.pieInterpolationOther=this.value;autoSave()">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">PIE Application</label>
+          <div class="choice-group">
+            <label class="choice-opt"><input type="radio" name="pieApp" value="after_commutation" onchange="state.pieApplication=this.value;toggleOther('pieAppOther',false);autoSave()" checked><div><div class="choice-label">Apply After Commutation</div></div></label>
+            <label class="choice-opt"><input type="radio" name="pieApp" value="other" onchange="state.pieApplication=this.value;toggleOther('pieAppOther',true);autoSave()"><div><div class="choice-label">Other</div></div></label>
+          </div>
+          <div class="other-input reveal" id="pieAppOther">
+            <textarea class="form-textarea" placeholder="Please specify instructions..." oninput="state.pieApplicationOther=this.value;autoSave()"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <hr class="divider">
+      <div class="subsection-title">6.4 Additional Notes</div>
+      <textarea class="form-textarea" placeholder="Anything non-standard about commutation..." oninput="state.commutationNotes=this.value;autoSave()"></textarea>
+    </div>
+
+    <!-- Section 7: Validations -->
+    <div class="spec-section" id="s7">
+      <div class="section-header">
+        <span class="section-num">7</span>
+        <span class="section-title">Validations</span>
+        <span class="section-sub">dtor.cs: Sections D.1 and E</span>
+      </div>
+
+      <div class="subsection-title">7.1 Standard Pre-Calculation Checks (Errors)</div>
+      <div class="dyn-table-wrap">
+        <table class="dyn-table">
+          <thead><tr><th>#</th><th>Check</th><th style="min-width:90px">Applies?</th><th style="min-width:200px">Notes</th></tr></thead>
+          <tbody id="val71-tbody"></tbody>
+        </table>
+      </div>
+
+      <hr class="divider">
+      <div class="subsection-title">7.2 Standard Post-Calculation Checks (Warnings)</div>
+      <div class="dyn-table-wrap">
+        <table class="dyn-table">
+          <thead><tr><th>#</th><th>Check</th><th style="min-width:90px">Applies?</th><th style="min-width:200px">Notes</th></tr></thead>
+          <tbody id="val72-tbody"></tbody>
+        </table>
+      </div>
+
+      <hr class="divider">
+      <div class="subsection-title">7.3 Additional Scheme-Specific Validations</div>
+      <div class="dyn-table-wrap">
+        <table class="dyn-table">
+          <thead><tr><th>#</th><th>Check</th><th>Error / Warning?</th><th>Pre / Post Calc?</th><th>Message to display</th><th></th></tr></thead>
+          <tbody id="val73-tbody"></tbody>
+        </table>
+      </div>
+      <button class="btn btn-ghost btn-sm add-row-btn" onclick="addVal73Row()">+ Add validation</button>
+    </div>
+
+    <!-- Section 9: Additional Notes -->
+    <div class="spec-section" id="s9">
+      <div class="section-header">
+        <span class="section-num">9</span>
+        <span class="section-title">Additional Misc Notes</span>
+      </div>
+      <p class="hint">Capture anything that doesn't fit the sections above — scheme quirks, known issues, things the coder should watch out for.</p>
+      <textarea class="form-textarea" style="min-height:140px" oninput="state.additionalNotes=this.value;autoSave()"></textarea>
+    </div>
+
+    <!-- Section 10: Sign-Off -->
+    <div class="spec-section" id="s10">
+      <div class="section-header">
+        <span class="section-num">10</span>
+        <span class="section-title">Sign-Off</span>
+      </div>
+      <div class="form-row cols-3" style="margin-bottom:12px">
+        <div class="form-group"><label class="form-label">Analyst Name</label><input class="form-input" oninput="state.analystName=this.value;autoSave()"></div>
+        <div class="form-group"><label class="form-label">Analyst Date</label><input class="form-input" type="date" oninput="state.analystDate=this.value;autoSave()"></div>
+        <div></div>
+      </div>
+      <div class="form-row cols-3" style="margin-bottom:12px">
+        <div class="form-group"><label class="form-label">Coder Name</label><input class="form-input" oninput="state.coderName=this.value;autoSave()"></div>
+        <div class="form-group"><label class="form-label">Coder Date</label><input class="form-input" type="date" oninput="state.coderDate=this.value;autoSave()"></div>
+        <div></div>
+      </div>
+      <div class="form-row cols-3">
+        <div class="form-group"><label class="form-label">Reviewer Name</label><input class="form-input" oninput="state.reviewerName=this.value;autoSave()"></div>
+        <div class="form-group"><label class="form-label">Reviewer Date</label><input class="form-input" type="date" oninput="state.reviewerDate=this.value;autoSave()"></div>
+        <div></div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /layout -->
+
+<!-- Output modal -->
+<div id="output-modal">
+  <div class="output-box">
+    <div class="output-header">
+      <h2>Generated Markdown</h2>
+      <button class="btn btn-ghost btn-sm" onclick="copyOutput()">Copy</button>
+      <button class="btn btn-primary btn-sm" onclick="downloadOutput()">Download .md</button>
+      <button class="btn btn-ghost btn-sm" onclick="closeOutput()">✕ Close</button>
+    </div>
+    <textarea id="output-md" readonly></textarea>
+  </div>
+</div>
+
+<!-- Load modal -->
+<div id="load-modal">
+  <div class="load-box">
+    <div class="load-header">
+      <h2>Load Saved Draft</h2>
+      <button class="btn btn-ghost btn-sm" onclick="closeLoadModal()">✕</button>
+    </div>
+    <div id="saved-list"></div>
+  </div>
+</div>
+
+<script src="DtoR_template.js"></script>
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────────────────────────────────────
+function uid() { return '_' + Math.random().toString(36).substr(2,8); }
+
+let state = {
+  scheme:'', author:'', date:new Date().toISOString().split('T')[0], version:'1.0', status:'Draft',
+  // S1
+  validCategories:[],
+  // S2
+  revalBlocks:[], afrTable:[],
+  // S3
+  gmpRestrictionBasis:'retirement_date', gmpRestrictionBasisOther:'',
+  pre97Element:'PRE97', pre97Other:'',
+  gmpRevalBasis:'6_aprils',
+  gmpDateCalcTo:'retirement_date', gmpDateCalcToOther:'',
+  gmpFormula:'confirmed', gmpFormulaOther:'',
+  gmpMissedIncreasesTo:'retirement_date', gmpMissedIncreasesToOther:'',
+  gmpMissedIncreasesFrom:'1st_april', gmpMissedIncreasesFromOther:'',
+  gmpFutureIncreases:'no_increase', gmpFutureIncreasesOther:'',
+  gmpIncrementsTo:'retirement_date', gmpIncrementsTOther:'',
+  gmpIncrementsCapped:'yes',
+  gmpIncTableKey:'GMPINC', gmpIncUploaded:'TBC',
+  gmpLRFApplicable:'no', gmpLRFTable:[],
+  gmpAdditionalNotes:'',
+  // S4
+  retirementFactorBasis:'age_attained',
+  erfBlocks:[], erfUploadTable:[],
+  lrfBlocks:[], lrfUploadTable:[],
+  retirementFactorNotes:'',
+  // S5
+  peBlocks:[], pensionElementNotes:'',
+  // S6
+  singleCF:'yes', singleCFKey:'',
+  cfBlocks:[], cfUploadTable:[],
+  pclsOrdered:false, pclsDCFund:true,
+  pclsWithSpouses:false, pclsSpousesPercentage:'',
+  pclsWithSpousesGMPMin:false, pclsSpousesGMPMinOption:'nil_pre88', pclsSpousesGMPMinOther:'',
+  pclsWithPIE:false,
+  pclsWithDecimalPlaces:false, pclsDecimalPlaces:'',
+  orderBlocks:[],
+  pieInterpolation:'year_month', pieInterpolationOther:'',
+  pieApplication:'after_commutation', pieApplicationOther:'',
+  commutationNotes:'',
+  // S7
+  val71:[
+    {check:'Check that the Member\'s category is a valid category for the calculation', applies:'Yes', notes:''},
+    {check:'Check that the retirement date is not earlier than the earliest ERF or later than the latest LRF', applies:'Yes', notes:''},
+    {check:'Member has either a date of leaving or date terminated employment', applies:'Yes', notes:''}
+  ],
+  val72:[
+    {check:'Capital value <= £30,000 (trivial commutation)', applies:'Yes', notes:''},
+    {check:'Maximum cash is negative (GMP not covered)', applies:'Yes', notes:''},
+    {check:'External fund values found (AVC check)', applies:'Yes', notes:''}
+  ],
+  customValidations:[],
+  // S9, S10
+  additionalNotes:'',
+  analystName:'', analystDate:'', coderName:'', coderDate:'', reviewerName:'', reviewerDate:''
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COLUMN / ROW DEFINITIONS for dynamic tables
+// ─────────────────────────────────────────────────────────────────────────────
+const revalColDef = [
+  {k:'elementKey',label:'Deferred Element Key',w:140},
+  {k:'npaMale',label:'NPA Male',w:80},
+  {k:'npaFemale',label:'NPA Female',w:80},
+  {k:'nraMale',label:'NRA Male',w:80},
+  {k:'nraFemale',label:'NRA Female',w:80},
+  {k:'revalType',label:'Reval Type',w:120,type:'select',opts:['s52','s101','Fixed','GMP']},
+  {k:'afrRate',label:'AFR Rate',w:80},
+  {k:'revalEndDate',label:'Reval End Date',w:110},
+  {k:'notes',label:'Notes',w:120}
+];
+const revalRowDef = () => ({id:uid(),elementKey:'',npaMale:'',npaFemale:'',nraMale:'',nraFemale:'',revalType:'',afrRate:'',revalEndDate:'',notes:''});
+
+const erfColDef = [
+  {k:'elementKey',label:'Deferred Element Key',w:140},
+  {k:'erfAppDateMale',label:'ERF App Date (M)',w:120},
+  {k:'erfAppDateFemale',label:'ERF App Date (F)',w:120},
+  {k:'erfTableMale',label:'ERF Table (M)',w:100},
+  {k:'erfTableFemale',label:'ERF Table (F)',w:100},
+  {k:'notes',label:'Notes',w:120}
+];
+const erfRowDef = () => ({id:uid(),elementKey:'',erfAppDateMale:'',erfAppDateFemale:'',erfTableMale:'',erfTableFemale:'',notes:''});
+
+const lrfColDef = [
+  {k:'elementKey',label:'Deferred Element Key',w:140},
+  {k:'lrfAppDateMale',label:'LRF App Date (M)',w:120},
+  {k:'lrfAppDateFemale',label:'LRF App Date (F)',w:120},
+  {k:'lrfTableMale',label:'LRF Table (M)',w:100},
+  {k:'lrfTableFemale',label:'LRF Table (F)',w:100},
+  {k:'notes',label:'Notes',w:120}
+];
+const lrfRowDef = () => ({id:uid(),elementKey:'',lrfAppDateMale:'',lrfAppDateFemale:'',lrfTableMale:'',lrfTableFemale:'',notes:''});
+
+const peColDef = [
+  {k:'pensionElementKey',label:'Pension Element Key (per Aurora)',w:200},
+  {k:'builtFrom',label:'Built from (Deferred Element Key(s), per Aurora)',w:300}
+];
+const peRowDef = () => ({id:uid(),pensionElementKey:'',builtFrom:''});
+
+const cfColDef = [
+  {k:'cfTable',label:'CF Table Key',w:120},
+  {k:'elementsApplicable',label:'Deferred Elements Applicable',w:250},
+  {k:'notes',label:'Notes',w:150}
+];
+const cfRowDef = () => ({id:uid(),cfTable:'',elementsApplicable:'',notes:''});
+
+const orderColDef = [
+  {k:'priority',label:'Priority',w:80},
+  {k:'pensionElement',label:'Pension Element',w:200}
+];
+const orderRowDef = () => ({id:uid(),priority:'',pensionElement:''});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CATEGORY BLOCK SYSTEM (sections 2, 4, 5, 6)
+// ─────────────────────────────────────────────────────────────────────────────
+function addCatBlock(stateKey, containerId, rowDef, colDef) {
+  const block = {id:uid(), categories:'', rows:[rowDef()]};
+  state[stateKey].push(block);
+  renderCatBlocks(stateKey, containerId, rowDef, colDef);
+  autoSave();
+}
+
+function renderCatBlocks(stateKey, containerId, rowDef, colDef) {
+  const container = document.getElementById(containerId);
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  container.innerHTML = state[stateKey].map((block, bi) => {
+    const letter = letters[bi] || String(bi+1);
+    const theadCells = colDef.map(c => `<th style="min-width:${c.w}px">${c.label}</th>`).join('') + '<th></th>';
+    const rows = block.rows.map((row, ri) => {
+      const cells = colDef.map(c => {
+        if (c.type === 'select') {
+          const opts = c.opts.map(o => `<option${row[c.k]===o?' selected':''}>${o}</option>`).join('');
+          return `<td><select onchange="setCatRowCell('${stateKey}','${block.id}','${row.id}','${c.k}',this.value)">${opts}</select></td>`;
+        }
+        return `<td><input value="${esc(row[c.k])}" oninput="setCatRowCell('${stateKey}','${block.id}','${row.id}','${c.k}',this.value)"></td>`;
+      }).join('');
+      return `<tr>${cells}<td><button class="del-btn" onclick="delCatRow('${stateKey}','${block.id}','${row.id}','${containerId}')">✕</button></td></tr>`;
+    }).join('');
+    return `<div class="cat-block" id="cb-${block.id}">
+      <div class="cat-block-header">
+        <span class="cat-letter">Table ${letter}</span>
+        <input class="cat-label-input" placeholder="Category or categories (e.g. Cat A, Cat B)" value="${esc(block.categories)}" oninput="setCatProp('${stateKey}','${block.id}','categories',this.value)">
+        <button class="btn btn-danger btn-sm" onclick="delCatBlock('${stateKey}','${block.id}','${containerId}')">Remove table</button>
+      </div>
+      <div class="dyn-table-wrap">
+        <table class="dyn-table"><thead><tr>${theadCells}</tr></thead><tbody id="tb-${block.id}">${rows}</tbody></table>
+      </div>
+      <button class="btn btn-ghost btn-sm add-row-btn" onclick="addCatRow2('${stateKey}','${block.id}','${containerId}')">+ Add row</button>
+    </div>`;
+  }).join('');
+  // Store refs keyed by stateKey (no hyphens, safe as JS property name)
+  window[`rowDef_${stateKey}`] = rowDef;
+  window[`colDef_${stateKey}`] = colDef;
+}
+
+function setCatProp(stateKey, blockId, prop, val) {
+  const b = state[stateKey].find(x=>x.id===blockId);
+  if (b) { b[prop]=val; autoSave(); }
+}
+function setCatRowCell(stateKey, blockId, rowId, col, val) {
+  const b = state[stateKey].find(x=>x.id===blockId);
+  if (b) { const r=b.rows.find(x=>x.id===rowId); if(r){r[col]=val; autoSave();} }
+}
+function addCatRow2(stateKey, blockId, containerId) {
+  const b = state[stateKey].find(x=>x.id===blockId);
+  if (!b) return;
+  const rowDef = window[`rowDef_${stateKey}`];
+  b.rows.push(rowDef());
+  renderCatBlocks(stateKey, containerId, rowDef, window[`colDef_${stateKey}`]);
+  autoSave();
+}
+function delCatRow(stateKey, blockId, rowId, containerId) {
+  const b = state[stateKey].find(x=>x.id===blockId);
+  if (b) { b.rows=b.rows.filter(x=>x.id!==rowId); renderCatBlocks(stateKey, containerId, window[`rowDef_${stateKey}`], window[`colDef_${stateKey}`]); autoSave(); }
+}
+function delCatBlock(stateKey, blockId, containerId) {
+  state[stateKey]=state[stateKey].filter(x=>x.id!==blockId);
+  renderCatBlocks(stateKey, containerId, window[`rowDef_${stateKey}`], window[`colDef_${stateKey}`]);
+  autoSave();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SIMPLE ROW TABLES (cat-table, afr, gmpLRF, uploads, val73)
+// ─────────────────────────────────────────────────────────────────────────────
+function addCatRow() {
+  const id = uid();
+  state.validCategories.push({id, key:'', description:''});
+  const tb = document.getElementById('cat-tbody');
+  const tr = document.createElement('tr');
+  tr.id = 'cr-'+id;
+  tr.innerHTML = `<td><input value="" oninput="setSimpleRow('validCategories','${id}','key',this.value)"></td>
+    <td><input value="" oninput="setSimpleRow('validCategories','${id}','description',this.value)"></td>
+    <td><button class="del-btn" onclick="delSimpleRow('validCategories','${id}','cr-${id}')">✕</button></td>`;
+  tb.appendChild(tr);
+  autoSave();
+}
+
+function addAfrRow() {
+  const id = uid();
+  state.afrTable.push({id, refKey:'', value:'', usedFor:''});
+  const tb = document.getElementById('afr-tbody');
+  const tr = document.createElement('tr');
+  tr.id = 'afr-'+id;
+  tr.innerHTML = `<td><input value="" oninput="setSimpleRow('afrTable','${id}','refKey',this.value)" placeholder="e.g. AFR1"></td>
+    <td><input value="" oninput="setSimpleRow('afrTable','${id}','value',this.value)" placeholder="e.g. 1.03"></td>
+    <td><input value="" oninput="setSimpleRow('afrTable','${id}','usedFor',this.value)" placeholder="e.g. s52 elements"></td>
+    <td><button class="del-btn" onclick="delSimpleRow('afrTable','${id}','afr-${id}')">✕</button></td>`;
+  tb.appendChild(tr);
+  autoSave();
+}
+
+function addGmpLrfRow() {
+  const id = uid();
+  state.gmpLRFTable.push({id, elementKey:'', revalRateType:'', revalEndMale:'', revalEndFemale:'', lrfRules:'', lrfMale:'', lrfFemale:''});
+  const tb = document.getElementById('gmpLRF-tbody');
+  const tr = document.createElement('tr');
+  tr.id = 'glrf-'+id;
+  tr.innerHTML = `
+    <td><input value="" oninput="setSimpleRow('gmpLRFTable','${id}','elementKey',this.value)" placeholder="e.g. Pre88 GMP"></td>
+    <td><input value="" oninput="setSimpleRow('gmpLRFTable','${id}','revalRateType',this.value)" placeholder="e.g. Fixed"></td>
+    <td><input value="" oninput="setSimpleRow('gmpLRFTable','${id}','revalEndMale',this.value)"></td>
+    <td><input value="" oninput="setSimpleRow('gmpLRFTable','${id}','revalEndFemale',this.value)"></td>
+    <td><input value="" oninput="setSimpleRow('gmpLRFTable','${id}','lrfRules',this.value)"></td>
+    <td><input value="" oninput="setSimpleRow('gmpLRFTable','${id}','lrfMale',this.value)"></td>
+    <td><input value="" oninput="setSimpleRow('gmpLRFTable','${id}','lrfFemale',this.value)"></td>
+    <td><button class="del-btn" onclick="delSimpleRow('gmpLRFTable','${id}','glrf-${id}')">✕</button></td>`;
+  tb.appendChild(tr);
+  autoSave();
+}
+
+function addUploadRow(tbodyId, stateKey) {
+  const id = uid();
+  state[stateKey].push({id, tableKey:'', uploaded:'TBC'});
+  const tb = document.getElementById(tbodyId);
+  const tr = document.createElement('tr');
+  tr.id = 'ul-'+id;
+  tr.innerHTML = `<td><input value="" oninput="setSimpleRow('${stateKey}','${id}','tableKey',this.value)" placeholder="e.g. ERF1"></td>
+    <td><select onchange="setSimpleRow('${stateKey}','${id}','uploaded',this.value)"><option>TBC</option><option>Y</option><option>N</option></select></td>
+    <td><button class="del-btn" onclick="delSimpleRow('${stateKey}','${id}','ul-${id}')">✕</button></td>`;
+  tb.appendChild(tr);
+  autoSave();
+}
+
+function addVal73Row() {
+  const id = uid();
+  const num = state.customValidations.length + 1;
+  state.customValidations.push({id, num:'', check:'', type:'Error', timing:'Pre-calc', message:''});
+  const tb = document.getElementById('val73-tbody');
+  const tr = document.createElement('tr');
+  tr.id = 'v73-'+id;
+  tr.innerHTML = `
+    <td><input value="${num}" style="width:40px" oninput="setSimpleRow('customValidations','${id}','num',this.value)"></td>
+    <td><input value="" oninput="setSimpleRow('customValidations','${id}','check',this.value)"></td>
+    <td><select onchange="setSimpleRow('customValidations','${id}','type',this.value)"><option>Error</option><option>Warning</option></select></td>
+    <td><select onchange="setSimpleRow('customValidations','${id}','timing',this.value)"><option>Pre-calc</option><option>Post-calc</option></select></td>
+    <td><input value="" oninput="setSimpleRow('customValidations','${id}','message',this.value)"></td>
+    <td><button class="del-btn" onclick="delSimpleRow('customValidations','${id}','v73-${id}')">✕</button></td>`;
+  tb.appendChild(tr);
+  autoSave();
+}
+
+function setSimpleRow(stateKey, id, prop, val) {
+  const r = state[stateKey].find(x=>x.id===id);
+  if (r) { r[prop]=val; autoSave(); }
+}
+function delSimpleRow(stateKey, id, trId) {
+  state[stateKey] = state[stateKey].filter(x=>x.id!==id);
+  document.getElementById(trId)?.remove();
+  autoSave();
+}
+
+// Validation 7.1 and 7.2 fixed rows
+function renderFixed(tbId, arr, offset) {
+  const tb = document.getElementById(tbId);
+  tb.innerHTML = arr.map((row,i) => `
+    <tr>
+      <td style="width:30px">${i+1+offset}</td>
+      <td>${esc(row.check)}</td>
+      <td><select onchange="state.${tbId==='val71-tbody'?'val71':'val72'}[${i}].applies=this.value;autoSave()">
+        <option${row.applies==='Yes'?' selected':''}>Yes</option>
+        <option${row.applies==='No'?' selected':''}>No</option>
+        <option${row.applies==='TBC'?' selected':''}>TBC</option>
+      </select></td>
+      <td><input value="${esc(row.notes)}" oninput="state.${tbId==='val71-tbody'?'val71':'val72'}[${i}].notes=this.value;autoSave()"></td>
+    </tr>`).join('');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UI HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+function esc(s) { const d=document.createElement('div');d.textContent=s||'';return d.innerHTML; }
+function toggleOther(id, show) { document.getElementById(id)?.classList.toggle('shown', show); }
+function toggleReveal(id, show) { document.getElementById(id)?.classList.toggle('shown', show); }
+function setActive(el) { document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active')); el.classList.add('active'); }
+function updateChip() { document.getElementById('scheme-chip').textContent = state.scheme || 'No scheme name entered'; }
+function toggleTheme() {
+  const t = document.body.getAttribute('data-theme')==='dark'?'light':'dark';
+  document.body.setAttribute('data-theme', t);
+  localStorage.setItem('dtor-theme', t);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SAVE / LOAD
+// ─────────────────────────────────────────────────────────────────────────────
+let saveTimer;
+function autoSave() { clearTimeout(saveTimer); saveTimer = setTimeout(saveNow, 800); }
+
+function saveNow() {
+  const key = 'dtor-draft-' + (state.scheme || 'unnamed');
+  const data = { scheme:state.scheme, date:new Date().toISOString(), state:JSON.parse(JSON.stringify(state)) };
+  localStorage.setItem(key, JSON.stringify(data));
+}
+
+function showLoadModal() {
+  const list = document.getElementById('saved-list');
+  const keys = Object.keys(localStorage).filter(k=>k.startsWith('dtor-draft-'));
+  if (!keys.length) { list.innerHTML='<div class="empty-msg">No saved drafts found.</div>'; }
+  else {
+    list.innerHTML = keys.map(k => {
+      const d = JSON.parse(localStorage.getItem(k));
+      return `<div class="saved-item" onclick="loadDraft('${k}')">
+        <div class="saved-scheme">${esc(d.scheme||'Unnamed')}</div>
+        <div class="saved-date">${new Date(d.date).toLocaleDateString()}</div>
+        <button class="saved-del" onclick="event.stopPropagation();deleteDraft('${k}')">✕</button>
+      </div>`;
+    }).join('');
+  }
+  document.getElementById('load-modal').classList.add('open');
+}
+function closeLoadModal() { document.getElementById('load-modal').classList.remove('open'); }
+function deleteDraft(key) { localStorage.removeItem(key); showLoadModal(); }
+
+function loadDraft(key) {
+  const d = JSON.parse(localStorage.getItem(key));
+  if (!d) return;
+  state = d.state;
+  closeLoadModal();
+  rebuildFormFromState();
+}
+
+function rebuildFormFromState() {
+  // Header
+  document.getElementById('f-scheme').value = state.scheme;
+  document.getElementById('f-author').value = state.author;
+  document.getElementById('f-date').value = state.date;
+  document.getElementById('f-version').value = state.version;
+  document.getElementById('f-status').value = state.status;
+  updateChip();
+  // Radios / checkboxes
+  document.querySelectorAll('input[type=radio]').forEach(r => {
+    const map = {
+      gmpRestriction:'gmpRestrictionBasis', gmpRevalBasis:'gmpRevalBasis',
+      gmpDateCalcTo:'gmpDateCalcTo', gmpFormula:'gmpFormula',
+      gmpMissedTo:'gmpMissedIncreasesTo', gmpMissedFrom:'gmpMissedIncreasesFrom',
+      gmpFutureInc:'gmpFutureIncreases', gmpIncTo:'gmpIncrementsTo',
+      gmpCapped:'gmpIncrementsCapped', gmpLRF:'gmpLRFApplicable',
+      rfBasis:'retirementFactorBasis', singleCF:'singleCF',
+      pieInterp:'pieInterpolation', pieApp:'pieApplication',
+      pre97:'pre97Element', spousesGmpOpt:'pclsSpousesGMPMinOption'
+    };
+    if (map[r.name]) r.checked = r.value === state[map[r.name]];
+  });
+  ['pcls-ordered','pcls-dcfund','pcls-spouses','pcls-spousesgmpmin','pcls-pie','pcls-dp'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const map = {'pcls-ordered':'pclsOrdered','pcls-dcfund':'pclsDCFund','pcls-spouses':'pclsWithSpouses','pcls-spousesgmpmin':'pclsWithSpousesGMPMin','pcls-pie':'pclsWithPIE','pcls-dp':'pclsWithDecimalPlaces'};
+    el.checked = state[map[id]];
+  });
+  // Conditional reveals
+  toggleReveal('gmpLRFSection', state.gmpLRFApplicable==='yes');
+  toggleReveal('singleCFInput', state.singleCF==='yes');
+  toggleReveal('multiCFBlocks', state.singleCF==='no');
+  toggleReveal('orderedSection', state.pclsOrdered);
+  toggleReveal('pieSection', state.pclsWithPIE);
+  toggleReveal('spousesInput', state.pclsWithSpouses);
+  toggleReveal('spousesGmpSection', state.pclsWithSpousesGMPMin);
+  // GMP Inc
+  document.getElementById('f-gmpIncKey').value = state.gmpIncTableKey;
+  // Textareas — rebuild from state
+  document.querySelectorAll('textarea').forEach(ta => {
+    const map = { 'state.gmpAdditionalNotes':gmpAdditionalNotes, 'state.retirementFactorNotes':retirementFactorNotes };
+  });
+  // Rebuild dynamic simple tables
+  document.getElementById('cat-tbody').innerHTML = '';
+  state.validCategories.forEach(r => {
+    const id = r.id;
+    const tb = document.getElementById('cat-tbody');
+    const tr = document.createElement('tr');
+    tr.id = 'cr-'+id;
+    tr.innerHTML = `<td><input value="${esc(r.key)}" oninput="setSimpleRow('validCategories','${id}','key',this.value)"></td>
+      <td><input value="${esc(r.description)}" oninput="setSimpleRow('validCategories','${id}','description',this.value)"></td>
+      <td><button class="del-btn" onclick="delSimpleRow('validCategories','${id}','cr-${id}')">✕</button></td>`;
+    tb.appendChild(tr);
+  });
+  document.getElementById('afr-tbody').innerHTML = '';
+  state.afrTable.forEach(r => {
+    const id = r.id;
+    const tb = document.getElementById('afr-tbody');
+    const tr = document.createElement('tr'); tr.id = 'afr-'+id;
+    tr.innerHTML = `<td><input value="${esc(r.refKey)}" oninput="setSimpleRow('afrTable','${id}','refKey',this.value)"></td>
+      <td><input value="${esc(r.value)}" oninput="setSimpleRow('afrTable','${id}','value',this.value)"></td>
+      <td><input value="${esc(r.usedFor)}" oninput="setSimpleRow('afrTable','${id}','usedFor',this.value)"></td>
+      <td><button class="del-btn" onclick="delSimpleRow('afrTable','${id}','afr-${id}')">✕</button></td>`;
+    tb.appendChild(tr);
+  });
+  document.getElementById('gmpLRF-tbody').innerHTML = '';
+  state.gmpLRFTable.forEach(r => {
+    const id = r.id;
+    const tb = document.getElementById('gmpLRF-tbody');
+    const tr = document.createElement('tr'); tr.id = 'glrf-'+id;
+    tr.innerHTML = `<td><input value="${esc(r.elementKey)}" oninput="setSimpleRow('gmpLRFTable','${id}','elementKey',this.value)"></td>
+      <td><input value="${esc(r.revalRateType)}" oninput="setSimpleRow('gmpLRFTable','${id}','revalRateType',this.value)"></td>
+      <td><input value="${esc(r.revalEndMale)}" oninput="setSimpleRow('gmpLRFTable','${id}','revalEndMale',this.value)"></td>
+      <td><input value="${esc(r.revalEndFemale)}" oninput="setSimpleRow('gmpLRFTable','${id}','revalEndFemale',this.value)"></td>
+      <td><input value="${esc(r.lrfRules)}" oninput="setSimpleRow('gmpLRFTable','${id}','lrfRules',this.value)"></td>
+      <td><input value="${esc(r.lrfMale)}" oninput="setSimpleRow('gmpLRFTable','${id}','lrfMale',this.value)"></td>
+      <td><input value="${esc(r.lrfFemale)}" oninput="setSimpleRow('gmpLRFTable','${id}','lrfFemale',this.value)"></td>
+      <td><button class="del-btn" onclick="delSimpleRow('gmpLRFTable','${id}','glrf-${id}')">✕</button></td>`;
+    tb.appendChild(tr);
+  });
+  // Upload tables
+  ['erf-upload-tbody','lrf-upload-tbody','cf-upload-tbody'].forEach(tbId => {
+    const skey = tbId==='erf-upload-tbody'?'erfUploadTable':tbId==='lrf-upload-tbody'?'lrfUploadTable':'cfUploadTable';
+    document.getElementById(tbId).innerHTML='';
+    state[skey].forEach(r => {
+      const id=r.id; const tb=document.getElementById(tbId);
+      const tr=document.createElement('tr'); tr.id='ul-'+id;
+      tr.innerHTML=`<td><input value="${esc(r.tableKey)}" oninput="setSimpleRow('${skey}','${id}','tableKey',this.value)"></td>
+        <td><select onchange="setSimpleRow('${skey}','${id}','uploaded',this.value)">
+          <option${r.uploaded==='TBC'?' selected':''}>TBC</option>
+          <option${r.uploaded==='Y'?' selected':''}>Y</option>
+          <option${r.uploaded==='N'?' selected':''}>N</option>
+        </select></td>
+        <td><button class="del-btn" onclick="delSimpleRow('${skey}','${id}','ul-${id}')">✕</button></td>`;
+      tb.appendChild(tr);
+    });
+  });
+  // Val 7.3
+  document.getElementById('val73-tbody').innerHTML='';
+  state.customValidations.forEach(r => {
+    const id=r.id; const tb=document.getElementById('val73-tbody');
+    const tr=document.createElement('tr'); tr.id='v73-'+id;
+    tr.innerHTML=`<td><input value="${esc(r.num)}" style="width:40px" oninput="setSimpleRow('customValidations','${id}','num',this.value)"></td>
+      <td><input value="${esc(r.check)}" oninput="setSimpleRow('customValidations','${id}','check',this.value)"></td>
+      <td><select onchange="setSimpleRow('customValidations','${id}','type',this.value)"><option${r.type==='Error'?' selected':''}>Error</option><option${r.type==='Warning'?' selected':''}>Warning</option></select></td>
+      <td><select onchange="setSimpleRow('customValidations','${id}','timing',this.value)"><option${r.timing==='Pre-calc'?' selected':''}>Pre-calc</option><option${r.timing==='Post-calc'?' selected':''}>Post-calc</option></select></td>
+      <td><input value="${esc(r.message)}" oninput="setSimpleRow('customValidations','${id}','message',this.value)"></td>
+      <td><button class="del-btn" onclick="delSimpleRow('customValidations','${id}','v73-${id}')">✕</button></td>`;
+    tb.appendChild(tr);
+  });
+  // Cat blocks
+  renderCatBlocks('revalBlocks','reval-blocks',revalRowDef,revalColDef);
+  renderCatBlocks('erfBlocks','erf-blocks',erfRowDef,erfColDef);
+  renderCatBlocks('lrfBlocks','lrf-blocks',lrfRowDef,lrfColDef);
+  renderCatBlocks('peBlocks','pe-blocks',peRowDef,peColDef);
+  renderCatBlocks('cfBlocks','cf-blocks',cfRowDef,cfColDef);
+  renderCatBlocks('orderBlocks','order-blocks',orderRowDef,orderColDef);
+  // Fixed validations
+  renderFixed('val71-tbody', state.val71, 0);
+  renderFixed('val72-tbody', state.val72, 3);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MARKDOWN GENERATION
+// ─────────────────────────────────────────────────────────────────────────────
+function chk(cond) { return cond ? '- [x]' : '- [ ]'; }
+function opt(val, optVal, label, indent) {
+  const prefix = indent ? '    ' : '';
+  return prefix + (val===optVal ? '- [x]' : '- [ ]') + ' ' + label;
+}
+function mdCell(s) { return (s||'').replace(/\|/g,'\\|'); }
+
+function buildData() {
+  const s = state;
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+  // Radio block renderers
+  function radioBlock(val, options, otherKey) {
+    return options.map(o => {
+      let line = (val===o.val ? '- [x]' : '- [ ]') + ' ' + o.label;
+      if (o.val==='other' && val==='other' && otherKey && s[otherKey])
+        line += '\n    - If other, please specify: ' + s[otherKey];
+      return line;
+    }).join('\n');
+  }
+
+  const gmpRestrictionBasis = radioBlock(s.gmpRestrictionBasis, [
+    {val:'retirement_date', label:'Total GMP at **Retirement Date**'},
+    {val:'gmp_date', label:'Total GMP at **GMP Date**'},
+    {val:'other', label:'Other'}
+  ], 'gmpRestrictionBasisOther');
+
+  const pre97Element = radioBlock(s.pre97Element, [
+    {val:'PRE97', label:'"PRE97"'},
+    {val:'other', label:'Other'}
+  ], 'pre97Other');
+
+  const gmpRevalBasis = radioBlock(s.gmpRevalBasis, [
+    {val:'6_aprils', label:'6 Aprils'},
+    {val:'complete_tax_years', label:'Complete Tax Years'}
+  ]);
+
+  const gmpDateCalcTo = radioBlock(s.gmpDateCalcTo, [
+    {val:'retirement_date', label:'Date of Retirement'},
+    {val:'other', label:'Other'}
+  ], 'gmpDateCalcToOther');
+
+  const gmpFormula = s.gmpFormula==='confirmed'
+    ? '- [x] Confirmed\n- [ ] Other Formula'
+    : '- [ ] Confirmed\n- [x] Other Formula\n    - If other, please give detail:\n' + (s.gmpFormulaOther||'');
+
+  const gmpMissedIncreasesTo = radioBlock(s.gmpMissedIncreasesTo, [
+    {val:'retirement_date', label:'Date of Retirement'},
+    {val:'other', label:'Other'}
+  ], 'gmpMissedIncreasesToOther');
+
+  const gmpMissedIncreasesFrom = radioBlock(s.gmpMissedIncreasesFrom, [
+    {val:'1st_april', label:'1st April'},
+    {val:'other', label:'Other'}
+  ], 'gmpMissedIncreasesFromOther');
+
+  const gmpFutureIncreases = radioBlock(s.gmpFutureIncreases, [
+    {val:'no_increase', label:'No increase, i.e. 1.0'},
+    {val:'3_percent', label:'3%'},
+    {val:'other', label:'Other'}
+  ], 'gmpFutureIncreasesOther');
+
+  const gmpIncrementsTo = radioBlock(s.gmpIncrementsTo, [
+    {val:'retirement_date', label:'Date of Retirement'},
+    {val:'other', label:'Other'}
+  ], 'gmpIncrementsTOther');
+
+  const gmpIncrementsCapped = radioBlock(s.gmpIncrementsCapped, [
+    {val:'yes', label:'Yes'},{val:'no', label:'No'}
+  ]);
+
+  const gmpLRFApplicable = radioBlock(s.gmpLRFApplicable, [
+    {val:'yes', label:'Yes\n    - If yes, please fill out Deferred GMP Element table below'},
+    {val:'no', label:'No\n    - If no, move on to Section 4.'}
+  ]);
+
+  let gmpLRFTable = '';
+  if (s.gmpLRFApplicable==='yes') {
+    const rows = s.gmpLRFTable.filter(r=>r.elementKey||r.revalRateType);
+    const header = '| Deferred GMP Element Key (per Aurora) | Revaluation Rate Type | RevalEnd Date Males | Reval End Date Females | Late Retirement Rules | LRF Table Male | LRF Table Female |\n|-----------|-----------|-----------|-----------|---------------------|-----------|-----------|';
+    const dataRows = rows.length ? rows.map(r=>`| ${mdCell(r.elementKey)} | ${mdCell(r.revalRateType)} | ${mdCell(r.revalEndMale)} | ${mdCell(r.revalEndFemale)} | ${mdCell(r.lrfRules)} | ${mdCell(r.lrfMale)} | ${mdCell(r.lrfFemale)} |`).join('\n') : '| | | | | | | |';
+    gmpLRFTable = '**Table 3.2.1A: GMP LRFs**\n' + header + '\n' + dataRows;
+  }
+
+  const retirementFactorBasis = radioBlock(s.retirementFactorBasis, [
+    {val:'age_attained', label:'Age Attained Basis'},
+    {val:'term', label:'Term Basis'}
+  ]);
+
+  // Single CF choice
+  let singleCFChoice = '';
+  if (s.singleCF==='yes') {
+    singleCFChoice = '- [x] Yes\n    - If yes, please specify the single CF table used: ' + (s.singleCFKey||'______');
+  } else {
+    singleCFChoice = '- [ ] Yes\n- [x] No, multiple CF tables used\n    - If No, please fill out table below:';
+  }
+
+  // PCLS options
+  let pclsLines = [
+    '[x] .WithCommucationFactors (Required for all schemes)',
+    '[x] .WithGMPRestriction (Required for all schemes)',
+    (s.pclsOrdered?'[x]':'[ ]') + ' .Ordered (Optional: Do not select if commutation is proportional)',
+  ];
+  if (s.pclsOrdered) pclsLines.push('    - If Ordered, fill out "Order for Commutation" below');
+  pclsLines.push((s.pclsDCFund?'[x]':'[ ]') + ' .WithDCFund (Optional: Defaults to assuming scheme has members with potential DCFund. De-select if not applicable.)');
+  pclsLines.push((s.pclsWithSpouses?'[x]':'[ ]') + ' .WithSpouses (Optional: Defaults to 50%, so only select here if another percentage is used)');
+  if (s.pclsWithSpouses && s.pclsSpousesPercentage) pclsLines.push('    - If .WithSpouses and not 50%, specify percentage: ' + s.pclsSpousesPercentage);
+  pclsLines.push((s.pclsWithSpousesGMPMin?'[x]':'[ ]') + ' .WithSpousesGMPMinimumOption (Optional: Defaults to GMP have 50% spouses except Female Pre88GMP which has 0. Select this if another method applied)');
+  if (s.pclsWithSpousesGMPMin) {
+    pclsLines.push('    ' + (s.pclsSpousesGMPMinOption==='nil_pre88'?'[x]':'[ ]') + ' NilPre88GMP (all GMP nil)');
+    pclsLines.push('    ' + (s.pclsSpousesGMPMinOption==='fifty_percent'?'[x]':'[ ]') + ' Fifty Percent (all GMP 50%)');
+    pclsLines.push('    ' + (s.pclsSpousesGMPMinOption==='other'?'[x]':'[ ]') + ' Other');
+    if (s.pclsSpousesGMPMinOption==='other' && s.pclsSpousesGMPMinOther) pclsLines.push('        - If other, please specify how to treat GMP for spouses: ' + s.pclsSpousesGMPMinOther);
+  }
+  pclsLines.push((s.pclsWithPIE?'[x]':'[ ]') + ' .WithPIE (Optional: Select if PIE is applicable and complete "For PIE only" below)');
+  pclsLines.push((s.pclsWithDecimalPlaces?'[x]':'[ ]') + ' .WithDecimalPlaces (Optional: Defaults to 2 d.p. so only select this if a different number of d.p required)');
+  if (s.pclsWithDecimalPlaces && s.pclsDecimalPlaces) pclsLines.push('    - Indicate decimal places to use, if not 2, here: ' + s.pclsDecimalPlaces);
+  const pclsOptions = pclsLines.map(l=>l.startsWith('[')? '- '+l : l).join('\n');
+
+  const pieInterpolation = radioBlock(s.pieInterpolation, [
+    {val:'year_month', label:'YearMonth'},
+    {val:'year_day', label:'YearDay'},
+    {val:'other', label:'Other'}
+  ], 'pieInterpolationOther');
+
+  const pieApplication = radioBlock(s.pieApplication, [
+    {val:'after_commutation', label:'Apply After Commutation'},
+    {val:'other', label:'Other'}
+  ], 'pieApplicationOther');
+
+  // Build cat block arrays
+  function buildCatBlocks(blocks, rowMapper) {
+    return blocks.map((b,i) => ({
+      letter: letters[i]||String(i+1),
+      categories: b.categories,
+      rows: b.rows.filter(r=>Object.values(r).some((v,ki)=>ki>0&&v)).map(rowMapper),
+      // For CF blocks, include gender
+      genderLine: b.genderMale !== undefined ? (b.genderMale?'- [x] Applicable Male':'- [ ] Applicable Male') + '\n' + (b.genderFemale?'- [x] Applicable Female':'- [ ] Applicable Female') : ''
+    }));
+  }
+
+  return {
+    scheme: mdCell(s.scheme), author: mdCell(s.author), date: s.date, version: mdCell(s.version), status: s.status,
+    validCategories: s.validCategories.filter(r=>r.key||r.description).map(r=>({key:mdCell(r.key),description:mdCell(r.description)})),
+    revalTables: buildCatBlocks(s.revalBlocks, r=>({elementKey:mdCell(r.elementKey),npaMale:mdCell(r.npaMale),npaFemale:mdCell(r.npaFemale),nraMale:mdCell(r.nraMale),nraFemale:mdCell(r.nraFemale),revalType:mdCell(r.revalType),afrRate:mdCell(r.afrRate),revalEndDate:mdCell(r.revalEndDate),notes:mdCell(r.notes)})),
+    afrTable: s.afrTable.filter(r=>r.refKey||r.value).map(r=>({refKey:mdCell(r.refKey),value:mdCell(r.value),usedFor:mdCell(r.usedFor)})),
+    gmpRestrictionBasis, pre97Element, gmpRevalBasis, gmpDateCalcTo, gmpFormula,
+    gmpMissedIncreasesTo, gmpMissedIncreasesFrom, gmpFutureIncreases, gmpIncrementsTo, gmpIncrementsCapped,
+    gmpIncTableKey: mdCell(s.gmpIncTableKey), gmpIncUploaded: s.gmpIncUploaded,
+    gmpLRFApplicable, gmpLRFTable, gmpAdditionalNotes: mdCell(s.gmpAdditionalNotes)||' ',
+    retirementFactorBasis,
+    erfTables: buildCatBlocks(s.erfBlocks, r=>({elementKey:mdCell(r.elementKey),erfAppDateMale:mdCell(r.erfAppDateMale),erfAppDateFemale:mdCell(r.erfAppDateFemale),erfTableMale:mdCell(r.erfTableMale),erfTableFemale:mdCell(r.erfTableFemale),notes:mdCell(r.notes)})),
+    erfUploadTable: s.erfUploadTable.filter(r=>r.tableKey).map(r=>({tableKey:mdCell(r.tableKey),uploaded:r.uploaded})),
+    lrfTables: buildCatBlocks(s.lrfBlocks, r=>({elementKey:mdCell(r.elementKey),lrfAppDateMale:mdCell(r.lrfAppDateMale),lrfAppDateFemale:mdCell(r.lrfAppDateFemale),lrfTableMale:mdCell(r.lrfTableMale),lrfTableFemale:mdCell(r.lrfTableFemale),notes:mdCell(r.notes)})),
+    lrfUploadTable: s.lrfUploadTable.filter(r=>r.tableKey).map(r=>({tableKey:mdCell(r.tableKey),uploaded:r.uploaded})),
+    retirementFactorNotes: mdCell(s.retirementFactorNotes)||' ',
+    pensionElementTables: buildCatBlocks(s.peBlocks, r=>({pensionElementKey:mdCell(r.pensionElementKey),builtFrom:mdCell(r.builtFrom)})),
+    pensionElementNotes: mdCell(s.pensionElementNotes)||' ',
+    singleCFChoice,
+    cfTables: s.cfBlocks.map((b,i)=>({
+      letter: letters[i]||String(i+1), categories: b.categories,
+      genderLine: (b.genderMale!==false?'- [x]':'- [ ]') + ' Applicable Male\n' + (b.genderFemale!==false?'- [x]':'- [ ]') + ' Applicable Female',
+      rows: b.rows.filter(r=>r.cfTable||r.elementsApplicable).map(r=>({cfTable:mdCell(r.cfTable),elementsApplicable:mdCell(r.elementsApplicable),notes:mdCell(r.notes)}))
+    })),
+    cfUploadTable: s.cfUploadTable.filter(r=>r.tableKey).map(r=>({tableKey:mdCell(r.tableKey),uploaded:r.uploaded})),
+    pclsOptions,
+    commutationOrderTables: buildCatBlocks(s.orderBlocks, r=>({priority:mdCell(r.priority),pensionElement:mdCell(r.pensionElement)})),
+    pieInterpolation, pieApplication,
+    commutationNotes: mdCell(s.commutationNotes)||' ',
+    val71_1_applies:s.val71[0].applies, val71_1_notes:mdCell(s.val71[0].notes),
+    val71_2_applies:s.val71[1].applies, val71_2_notes:mdCell(s.val71[1].notes),
+    val71_3_applies:s.val71[2].applies, val71_3_notes:mdCell(s.val71[2].notes),
+    val72_1_applies:s.val72[0].applies, val72_1_notes:mdCell(s.val72[0].notes),
+    val72_2_applies:s.val72[1].applies, val72_2_notes:mdCell(s.val72[1].notes),
+    val72_3_applies:s.val72[2].applies, val72_3_notes:mdCell(s.val72[2].notes),
+    customValidations: s.customValidations.map(r=>({num:mdCell(r.num),check:mdCell(r.check),type:r.type,timing:r.timing,message:mdCell(r.message)})),
+    additionalNotes: mdCell(s.additionalNotes)||' ',
+    analystName:mdCell(s.analystName), analystDate:s.analystDate,
+    coderName:mdCell(s.coderName), coderDate:s.coderDate,
+    reviewerName:mdCell(s.reviewerName), reviewerDate:s.reviewerDate
+  };
+}
+
+function processTemplate(template, data) {
+  // Process {{#each arr}}...{{/each}} (supports one level of nesting)
+  template = template.replace(/\{\{#each (\w+)\}\}([\s\S]*?)\{\{\/each\}\}/g, (_, key, block) => {
+    const arr = data[key] || [];
+    if (!arr.length) return '';
+    return arr.map(item => {
+      // Handle nested #each
+      let rendered = block.replace(/\{\{#each (\w+)\}\}([\s\S]*?)\{\{\/each\}\}/g, (__, k2, b2) => {
+        const arr2 = item[k2] || [];
+        if (!arr2.length) return '| | |\n';
+        return arr2.map(item2 => fillBlock(b2, item2)).join('');
+      });
+      return fillBlock(rendered, item);
+    }).join('');
+  });
+  return fillBlock(template, data);
+}
+
+function fillBlock(tmpl, data) {
+  return tmpl.replace(/\{\{(\w+)\}\}/g, (_, k) => data[k] !== undefined ? data[k] : '');
+}
+
+function generateMarkdown() {
+  const data = buildData();
+  const md = processTemplate(DTOR_TEMPLATE, data);
+  document.getElementById('output-md').value = md;
+  document.getElementById('output-modal').classList.add('open');
+}
+
+function copyOutput() {
+  const ta = document.getElementById('output-md');
+  navigator.clipboard.writeText(ta.value).then(() => {
+    const btn = event.target;
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 2000);
+  });
+}
+
+function downloadOutput() {
+  const md = document.getElementById('output-md').value;
+  const scheme = state.scheme || 'unnamed';
+  const date = state.date || new Date().toISOString().split('T')[0];
+  const filename = `DtoR_Spec_${scheme}_${date}.md`;
+  const blob = new Blob([md], {type:'text/markdown'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function closeOutput() { document.getElementById('output-modal').classList.remove('open'); }
+
+// Close modals on overlay click
+document.getElementById('output-modal').addEventListener('click', e => { if (e.target===e.currentTarget) closeOutput(); });
+document.getElementById('load-modal').addEventListener('click', e => { if (e.target===e.currentTarget) closeLoadModal(); });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────────────────────────────────────
+function init() {
+  // Theme
+  const savedTheme = localStorage.getItem('dtor-theme') || 'dark';
+  document.body.setAttribute('data-theme', savedTheme);
+  // Default date
+  document.getElementById('f-date').value = state.date;
+  // Render fixed validation rows
+  renderFixed('val71-tbody', state.val71, 0);
+  renderFixed('val72-tbody', state.val72, 3);
+  // Smooth scroll for sidebar nav
+  document.querySelectorAll('#sidebar a').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      const target = document.querySelector(a.getAttribute('href'));
+      if (target) target.scrollIntoView({behavior:'smooth', block:'start'});
+    });
+  });
+  // Auto-detect active section on scroll
+  const main = document.getElementById('main');
+  const sections = document.querySelectorAll('.spec-section');
+  main.addEventListener('scroll', () => {
+    let current = sections[0];
+    sections.forEach(s => { if (main.scrollTop >= s.offsetTop - 60) current = s; });
+    document.querySelectorAll('.nav-item').forEach(a => {
+      a.classList.toggle('active', a.getAttribute('href')==='#'+current.id);
+    });
+  });
+}
+
+init();
+</script>
+</body>
+</html>

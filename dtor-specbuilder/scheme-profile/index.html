@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DtoR Scheme Profile</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #141414; --card: #1c1c1c; --border: #2e2e2e;
+  --text: #e8e8e8; --muted: #888; --accent: #4A9FD9;
+  --accent2: #e07a2f; --success: #27ae60; --input-bg: #111;
+}
+[data-theme="light"] {
+  --bg: #f0f2f4; --card: #fff; --border: #ddd;
+  --text: #1e2528; --muted: #666; --input-bg: #fff;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scrollbar-gutter: stable; }
+body { font-family: Inter, system-ui, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+
+#header {
+  display: flex; align-items: center; gap: 12px; padding: 10px 24px;
+  background: var(--card); border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 100;
+}
+#header h1 { font-size: 15px; font-weight: 600; color: var(--accent); }
+#header .sub { font-size: 12px; color: var(--muted); }
+.spacer { flex: 1; }
+.btn { padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; font-family: inherit; font-weight: 500; }
+.btn:hover { opacity: 0.85; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+.btn-sm { padding: 5px 12px; font-size: 12px; }
+
+#main { max-width: 760px; margin: 0 auto; padding: 32px 24px 80px; }
+
+.section { margin-bottom: 40px; }
+.section-header { display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px; }
+.section-num { background: var(--accent2); color: #fff; font-size: 11px; font-weight: 700; border-radius: 4px; padding: 2px 8px; }
+.section-title { font-size: 16px; font-weight: 600; }
+.section-desc { font-size: 13px; color: var(--muted); margin-bottom: 18px; line-height: 1.5; }
+
+.form-group { margin-bottom: 16px; }
+.form-label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .4px; }
+.form-input, .form-select, .form-textarea {
+  width: 100%; padding: 9px 11px; background: var(--input-bg); border: 1px solid var(--border);
+  border-radius: 6px; color: var(--text); font-family: inherit; font-size: 13px; outline: none;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--accent); }
+.form-textarea { resize: vertical; min-height: 80px; }
+
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+
+/* Category counter */
+.cat-counter { display: flex; align-items: center; gap: 0; margin-bottom: 16px; }
+.cat-counter button { width: 36px; height: 36px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); font-size: 18px; cursor: pointer; font-family: inherit; }
+.cat-counter button:first-child { border-radius: 6px 0 0 6px; }
+.cat-counter button:last-child { border-radius: 0 6px 6px 0; }
+.cat-counter .count { width: 52px; height: 36px; text-align: center; background: var(--input-bg); border: 1px solid var(--border); border-left: none; border-right: none; color: var(--text); font-size: 16px; font-weight: 600; font-family: inherit; outline: none; }
+
+/* Category name inputs */
+.cat-names { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+.cat-name-row { display: flex; align-items: center; gap: 10px; }
+.cat-badge { background: var(--accent2); color: #fff; font-size: 11px; font-weight: 700; border-radius: 4px; padding: 3px 8px; min-width: 26px; text-align: center; }
+.cat-name-input { flex: 1; padding: 8px 10px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 13px; font-family: inherit; outline: none; }
+.cat-name-input:focus { border-color: var(--accent); }
+
+/* Per-category grid tables */
+.cat-grid { width: 100%; border-collapse: collapse; font-size: 13px; }
+.cat-grid th { padding: 8px 10px; text-align: left; background: var(--border); color: var(--muted); font-size: 12px; font-weight: 600; }
+.cat-grid th:first-child { width: 180px; }
+.cat-grid td { padding: 6px 6px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.cat-grid td:first-child { padding-left: 10px; font-weight: 500; color: var(--text); }
+.cat-grid td input, .cat-grid td select {
+  width: 100%; padding: 7px 8px; background: var(--input-bg); border: 1px solid var(--border);
+  border-radius: 5px; color: var(--text); font-size: 13px; font-family: inherit; outline: none;
+}
+.cat-grid td input:focus, .cat-grid td select:focus { border-color: var(--accent); }
+.afr-cell input { opacity: 1; transition: opacity .15s; }
+.afr-cell input:disabled { opacity: 0.25; }
+
+/* Toggle (yes/no) */
+.toggle-group { display: flex; gap: 0; margin-bottom: 4px; }
+.toggle-group label { flex: 1; }
+.toggle-group input[type=radio] { display: none; }
+.toggle-btn {
+  display: block; text-align: center; padding: 8px 0; border: 1px solid var(--border);
+  cursor: pointer; font-size: 13px; font-weight: 500; transition: all .15s; background: var(--input-bg); color: var(--muted);
+}
+.toggle-group label:first-child .toggle-btn { border-radius: 6px 0 0 6px; }
+.toggle-group label:last-child .toggle-btn { border-radius: 0 6px 6px 0; border-left: none; }
+.toggle-group input[type=radio]:checked + .toggle-btn { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+.reveal { display: none; }
+.reveal.shown { display: block; }
+.indent { padding-left: 16px; border-left: 2px solid var(--border); margin-top: 12px; }
+
+/* Choice group (radio) */
+.choice-group { display: flex; flex-direction: column; gap: 6px; }
+.choice-opt { display: flex; align-items: flex-start; gap: 8px; padding: 8px 12px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; }
+.choice-opt:hover { border-color: var(--accent); }
+.choice-opt input { margin-top: 2px; accent-color: var(--accent); flex-shrink: 0; }
+.choice-label { font-size: 13px; }
+.other-reveal { display: none; margin-top: 8px; }
+.other-reveal.shown { display: block; }
+
+/* Validation table */
+.val-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.val-table th { padding: 7px 10px; text-align: left; background: var(--border); color: var(--muted); font-size: 12px; }
+.val-table td { padding: 7px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.val-table td:first-child { padding-left: 10px; }
+.val-table td select { padding: 5px 7px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 5px; color: var(--text); font-size: 12px; font-family: inherit; outline: none; }
+.val-table td input { width: 100%; padding: 5px 7px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 5px; color: var(--text); font-size: 12px; font-family: inherit; outline: none; }
+
+.divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+.subsection { font-size: 13px; font-weight: 600; color: var(--accent); margin: 16px 0 10px; }
+.hint { font-size: 12px; color: var(--muted); margin-bottom: 10px; line-height: 1.5; }
+
+/* Output modal */
+#output-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.75); z-index: 200; align-items: center; justify-content: center; }
+#output-modal.open { display: flex; }
+.output-box { background: var(--card); border-radius: 10px; width: 90vw; max-width: 720px; height: 85vh; display: flex; flex-direction: column; border: 1px solid var(--border); }
+.output-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+.output-header h2 { font-size: 15px; flex: 1; }
+#output-md { flex: 1; padding: 18px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 12px; white-space: pre-wrap; background: var(--bg); color: var(--text); border: none; resize: none; width: 100%; outline: none; }
+
+/* Load modal */
+#load-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.75); z-index: 200; align-items: center; justify-content: center; }
+#load-modal.open { display: flex; }
+.load-box { background: var(--card); border-radius: 10px; width: 480px; max-height: 60vh; display: flex; flex-direction: column; border: 1px solid var(--border); }
+.load-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+.load-header h2 { font-size: 15px; flex: 1; }
+#saved-list { flex: 1; overflow-y: auto; padding: 10px; }
+.saved-item { display: flex; align-items: center; padding: 10px 12px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); margin-bottom: 6px; gap: 8px; }
+.saved-item:hover { border-color: var(--accent); }
+.saved-scheme { font-size: 13px; font-weight: 600; flex: 1; }
+.saved-date { font-size: 12px; color: var(--muted); }
+.saved-del { background: none; border: none; color: #c0392b; cursor: pointer; font-size: 14px; padding: 2px 6px; }
+.empty-msg { color: var(--muted); font-size: 13px; text-align: center; padding: 24px; }
+</style>
+</head>
+<body data-theme="dark">
+
+<div id="header">
+  <h1>DtoR Scheme Profile</h1>
+  <span class="sub">Analyst layer — no Aurora keys required</span>
+  <div class="spacer"></div>
+  <button class="btn btn-ghost btn-sm" onclick="showLoadModal()">Load</button>
+  <button class="btn btn-ghost btn-sm" onclick="saveNow()">Save</button>
+  <button class="btn btn-primary btn-sm" onclick="generate()">Generate Profile ▶</button>
+  <button class="btn btn-ghost btn-sm" onclick="toggleTheme()">☀</button>
+</div>
+
+<div id="main">
+
+  <!-- Header -->
+  <div class="section">
+    <div class="section-header"><span class="section-title">Scheme Details</span></div>
+    <div class="row3">
+      <div class="form-group">
+        <label class="form-label">Scheme Name</label>
+        <input class="form-input" id="f-scheme" placeholder="e.g. SchemeABC" oninput="state.scheme=this.value;autoSave()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Analyst</label>
+        <input class="form-input" id="f-analyst" placeholder="Full name" oninput="state.analyst=this.value;autoSave()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input class="form-input" type="date" id="f-date" oninput="state.date=this.value;autoSave()">
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 1: Categories -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">1</span>
+      <span class="section-title">Benefit Categories</span>
+    </div>
+    <p class="section-desc">How many distinct benefit categories does this scheme have for the DtoR calculation? Give each a plain English name — not Aurora keys.</p>
+
+    <label class="form-label">Number of categories</label>
+    <div class="cat-counter">
+      <button onclick="changeCount(-1)">−</button>
+      <input class="count" id="cat-count" type="number" min="1" max="8" value="1" onchange="setCatCount(parseInt(this.value)||1)">
+      <button onclick="changeCount(1)">+</button>
+    </div>
+    <div class="cat-names" id="cat-names"></div>
+  </div>
+
+  <!-- Section 2: Revaluation -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">2</span>
+      <span class="section-title">Revaluation</span>
+    </div>
+    <p class="section-desc">For each category, select the revaluation basis for deferred elements. The coder will map this to the specific element keys in Aurora.</p>
+    <table class="cat-grid" id="reval-grid">
+      <thead><tr><th>Category</th><th>Revaluation Basis</th><th>AFR Rate (if s52 or s101)</th></tr></thead>
+      <tbody id="reval-tbody"></tbody>
+    </table>
+  </div>
+
+  <!-- Section 3: GMP -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">3</span>
+      <span class="section-title">GMP</span>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Does this scheme have GMP?</label>
+      <div class="toggle-group" style="max-width:200px">
+        <label><input type="radio" name="hasGMP" value="yes" onchange="state.hasGMP='yes';toggleReveal('gmp-detail',true);autoSave()"><span class="toggle-btn">Yes</span></label>
+        <label><input type="radio" name="hasGMP" value="no" onchange="state.hasGMP='no';toggleReveal('gmp-detail',false);autoSave()" checked><span class="toggle-btn">No</span></label>
+      </div>
+    </div>
+
+    <div class="reveal" id="gmp-detail">
+      <div class="subsection">GMP Set Up</div>
+
+      <div class="form-group">
+        <label class="form-label">GMP restriction based on</label>
+        <div class="choice-group">
+          <label class="choice-opt"><input type="radio" name="gmpRestriction" value="retirement_date" onchange="state.gmpRestriction=this.value;showOther('gmpRestrictionOther',false);autoSave()" checked><div class="choice-label">Total GMP at Retirement Date</div></label>
+          <label class="choice-opt"><input type="radio" name="gmpRestriction" value="gmp_date" onchange="state.gmpRestriction=this.value;showOther('gmpRestrictionOther',false);autoSave()"><div class="choice-label">Total GMP at GMP Date</div></label>
+          <label class="choice-opt"><input type="radio" name="gmpRestriction" value="other" onchange="state.gmpRestriction=this.value;showOther('gmpRestrictionOther',true);autoSave()"><div class="choice-label">Other</div></label>
+        </div>
+        <div class="other-reveal" id="gmpRestrictionOther" style="padding-left:16px">
+          <input class="form-input" placeholder="Please specify..." oninput="state.gmpRestrictionOther=this.value;autoSave()">
+        </div>
+      </div>
+
+      <div class="row2">
+        <div class="form-group">
+          <label class="form-label">Revaluation basis</label>
+          <select class="form-select" onchange="state.gmpRevalBasis=this.value;autoSave()">
+            <option value="6_aprils">6 Aprils</option>
+            <option value="complete_tax_years">Complete Tax Years</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Missed increases applied from</label>
+          <select class="form-select" onchange="state.gmpMissedFrom=this.value;autoSave()">
+            <option value="1st_april">1st April</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row2">
+        <div class="form-group">
+          <label class="form-label">Increments capped at 260 weeks?</label>
+          <div class="toggle-group">
+            <label><input type="radio" name="gmpCapped" value="yes" onchange="state.gmpCapped='yes';autoSave()" checked><span class="toggle-btn">Yes</span></label>
+            <label><input type="radio" name="gmpCapped" value="no" onchange="state.gmpCapped='no';autoSave()"><span class="toggle-btn">No</span></label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Assumed future GMP increase (if GMPINC not yet uploaded)</label>
+          <select class="form-select" onchange="state.gmpFutureInc=this.value;autoSave()">
+            <option value="no_increase">No increase (1.0)</option>
+            <option value="3_percent">3%</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Does the scheme apply Scheme LRF factors to GMP elements (alternative late retirement)?</label>
+        <div class="toggle-group" style="max-width:200px">
+          <label><input type="radio" name="gmpLRF" value="yes" onchange="state.gmpLRF='yes';toggleReveal('gmpLRFNote',true);autoSave()"><span class="toggle-btn">Yes</span></label>
+          <label><input type="radio" name="gmpLRF" value="no" onchange="state.gmpLRF='no';toggleReveal('gmpLRFNote',false);autoSave()" checked><span class="toggle-btn">No</span></label>
+        </div>
+      </div>
+      <div class="reveal" id="gmpLRFNote">
+        <div class="indent hint">The coder will need GMP LRF element details. Add any relevant notes below.</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Additional GMP notes</label>
+        <textarea class="form-textarea" placeholder="Any non-standard GMP treatment, known quirks..." oninput="state.gmpNotes=this.value;autoSave()"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 4: Retirement Factors -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">4</span>
+      <span class="section-title">Retirement Factors</span>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Factor period basis</label>
+      <div class="toggle-group" style="max-width:320px">
+        <label><input type="radio" name="rfBasis" value="age_attained" onchange="state.rfBasis='age_attained';autoSave()" checked><span class="toggle-btn">Age Attained</span></label>
+        <label><input type="radio" name="rfBasis" value="term" onchange="state.rfBasis='term';autoSave()"><span class="toggle-btn">Term Basis</span></label>
+      </div>
+    </div>
+
+    <hr class="divider">
+    <div class="subsection">Early Retirement Factors</div>
+
+    <div class="form-group">
+      <label class="form-label">Do ERFs apply to any deferred elements?</label>
+      <div class="toggle-group" style="max-width:200px">
+        <label><input type="radio" name="hasERF" value="yes" onchange="state.hasERF='yes';toggleReveal('erf-detail',true);autoSave()"><span class="toggle-btn">Yes</span></label>
+        <label><input type="radio" name="hasERF" value="no" onchange="state.hasERF='no';toggleReveal('erf-detail',false);autoSave()" checked><span class="toggle-btn">No</span></label>
+      </div>
+    </div>
+    <div class="reveal" id="erf-detail">
+      <p class="hint">For each category, describe in plain English when ERFs start being applied (e.g. "Date member reaches NPA", "Date reaches age 65").</p>
+      <table class="cat-grid">
+        <thead><tr><th>Category</th><th>ERFs applied from (plain English)</th></tr></thead>
+        <tbody id="erf-tbody"></tbody>
+      </table>
+    </div>
+
+    <hr class="divider">
+    <div class="subsection">Late Retirement Factors</div>
+
+    <div class="form-group">
+      <label class="form-label">Do LRFs apply to any deferred elements?</label>
+      <div class="toggle-group" style="max-width:200px">
+        <label><input type="radio" name="hasLRF" value="yes" onchange="state.hasLRF='yes';toggleReveal('lrf-detail',true);autoSave()"><span class="toggle-btn">Yes</span></label>
+        <label><input type="radio" name="hasLRF" value="no" onchange="state.hasLRF='no';toggleReveal('lrf-detail',false);autoSave()" checked><span class="toggle-btn">No</span></label>
+      </div>
+    </div>
+    <div class="reveal" id="lrf-detail">
+      <p class="hint">For each category, describe in plain English when LRFs start being applied (e.g. "Date member reaches NPA", "Date reaches age 65").</p>
+      <table class="cat-grid">
+        <thead><tr><th>Category</th><th>LRFs applied from (plain English)</th></tr></thead>
+        <tbody id="lrf-tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="form-group" style="margin-top:16px">
+      <label class="form-label">Additional retirement factor notes</label>
+      <textarea class="form-textarea" placeholder="Any non-standard treatment, underpins, PIAs..." oninput="state.rfNotes=this.value;autoSave()"></textarea>
+    </div>
+  </div>
+
+  <!-- Section 5: Commutation -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">5</span>
+      <span class="section-title">Commutation / PCLS</span>
+    </div>
+
+    <div class="row2">
+      <div class="form-group">
+        <label class="form-label">Commutation factors</label>
+        <select class="form-select" onchange="state.cfStructure=this.value;autoSave()">
+          <option value="single">Single CF table — all categories and elements</option>
+          <option value="multiple">Multiple CF tables — varies by category or element</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Commutation order</label>
+        <select class="form-select" onchange="state.commutationOrder=this.value;autoSave()">
+          <option value="proportional">Proportional — all elements commuted equally</option>
+          <option value="ordered">Ordered — specific priority sequence</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row2">
+      <div class="form-group">
+        <label class="form-label">Spouses pension</label>
+        <select class="form-select" id="spouses-select" onchange="state.spouses=this.value;toggleReveal('spousesOther',this.value==='other');autoSave()">
+          <option value="50_standard">50% — standard</option>
+          <option value="none">None</option>
+          <option value="other">Other percentage</option>
+        </select>
+        <div class="reveal" id="spousesOther" style="margin-top:8px">
+          <input class="form-input" placeholder="e.g. 33%" oninput="state.spousesOtherValue=this.value;autoSave()">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">DC Fund (AVC) possible?</label>
+        <div class="toggle-group">
+          <label><input type="radio" name="dcFund" value="yes" onchange="state.dcFund='yes';autoSave()" checked><span class="toggle-btn">Yes — assume possible</span></label>
+          <label><input type="radio" name="dcFund" value="no" onchange="state.dcFund='no';autoSave()"><span class="toggle-btn">No</span></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="row2">
+      <div class="form-group">
+        <label class="form-label">PIE (Pension Increase Exchange)?</label>
+        <div class="toggle-group">
+          <label><input type="radio" name="pie" value="yes" onchange="state.pie='yes';autoSave()"><span class="toggle-btn">Yes</span></label>
+          <label><input type="radio" name="pie" value="no" onchange="state.pie='no';autoSave()" checked><span class="toggle-btn">No</span></label>
+        </div>
+      </div>
+      <div></div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Additional commutation notes</label>
+      <textarea class="form-textarea" placeholder="Non-standard commutation rules, GMP treatment for spouses, ordered priority..." oninput="state.commutationNotes=this.value;autoSave()"></textarea>
+    </div>
+  </div>
+
+  <!-- Section 6: Validations -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">6</span>
+      <span class="section-title">Validations</span>
+    </div>
+    <p class="section-desc">Confirm whether the standard checks apply, and note any additional scheme-specific validations needed.</p>
+
+    <div class="subsection">Standard checks (built into the template)</div>
+    <table class="val-table">
+      <thead><tr><th>Check</th><th style="width:100px">Applies?</th><th>Notes</th></tr></thead>
+      <tbody id="std-val-tbody"></tbody>
+    </table>
+
+    <div class="subsection" style="margin-top:20px">Additional scheme-specific validations</div>
+    <p class="hint">Describe any checks the calculation should perform that aren't in the standard list. The coder will determine whether each is an error or warning.</p>
+    <textarea class="form-textarea" placeholder="e.g. Flag if date of leaving is after age 75 | Check that pensionable service is not negative..." oninput="state.customValidations=this.value;autoSave()"></textarea>
+  </div>
+
+  <!-- Section 7: Notes -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">7</span>
+      <span class="section-title">Additional Notes</span>
+    </div>
+    <p class="section-desc">Anything else the coder should know — scheme quirks, known edge cases, references to scheme rules.</p>
+    <textarea class="form-textarea" style="min-height:120px" oninput="state.additionalNotes=this.value;autoSave()"></textarea>
+  </div>
+
+</div><!-- /main -->
+
+<!-- Output modal -->
+<div id="output-modal">
+  <div class="output-box">
+    <div class="output-header">
+      <h2>Scheme Profile</h2>
+      <button class="btn btn-ghost btn-sm" onclick="copyOutput()">Copy</button>
+      <button class="btn btn-primary btn-sm" onclick="downloadOutput()">Download .md</button>
+      <button class="btn btn-ghost btn-sm" onclick="closeOutput()">✕ Close</button>
+    </div>
+    <textarea id="output-md" readonly></textarea>
+  </div>
+</div>
+
+<!-- Load modal -->
+<div id="load-modal">
+  <div class="load-box">
+    <div class="load-header"><h2>Load Saved Profile</h2><button class="btn btn-ghost btn-sm" onclick="closeLoadModal()">✕</button></div>
+    <div id="saved-list"></div>
+  </div>
+</div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let state = {
+  scheme:'', analyst:'', date: new Date().toISOString().split('T')[0],
+  catCount: 1,
+  catNames: [''],
+  revalTypes: ['s52'], afrRates: [''],
+  hasGMP: 'no', gmpRestriction: 'retirement_date', gmpRestrictionOther: '',
+  gmpRevalBasis: '6_aprils', gmpMissedFrom: '1st_april',
+  gmpCapped: 'yes', gmpFutureInc: 'no_increase', gmpLRF: 'no', gmpNotes: '',
+  rfBasis: 'age_attained',
+  hasERF: 'no', erfDates: [''],
+  hasLRF: 'no', lrfDates: [''],
+  rfNotes: '',
+  cfStructure: 'single', commutationOrder: 'proportional',
+  spouses: '50_standard', spousesOtherValue: '', dcFund: 'yes', pie: 'no',
+  commutationNotes: '',
+  stdValidations: [
+    { check: 'Member\'s category is valid for this calculation', applies: 'Yes', notes: '' },
+    { check: 'Retirement date is within ERF/LRF bounds', applies: 'Yes', notes: '' },
+    { check: 'Member has a date of leaving or date terminated employment', applies: 'Yes', notes: '' },
+    { check: 'Capital value ≤ £30,000 (trivial commutation warning)', applies: 'Yes', notes: '' },
+    { check: 'Maximum cash is negative — GMP not covered (warning)', applies: 'Yes', notes: '' },
+    { check: 'External fund values found — AVC check (warning)', applies: 'Yes', notes: '' },
+  ],
+  customValidations: '',
+  additionalNotes: ''
+};
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+function esc(s){ const d=document.createElement('div');d.textContent=s||'';return d.innerHTML; }
+function toggleReveal(id, show){ document.getElementById(id)?.classList.toggle('shown', show); }
+function showOther(id, show){ document.getElementById(id)?.classList.toggle('shown', show); }
+function autoSave(){ clearTimeout(window._saveTimer); window._saveTimer=setTimeout(saveNow,800); }
+function toggleTheme(){
+  const t=document.body.getAttribute('data-theme')==='dark'?'light':'dark';
+  document.body.setAttribute('data-theme',t);
+  localStorage.setItem('dtor-profile-theme',t);
+}
+
+// ─── CATEGORIES ──────────────────────────────────────────────────────────────
+function changeCount(delta){
+  const n = Math.min(8, Math.max(1, state.catCount + delta));
+  setCatCount(n);
+}
+
+function setCatCount(n){
+  state.catCount = n;
+  document.getElementById('cat-count').value = n;
+  // Grow / shrink arrays
+  while(state.catNames.length < n){ state.catNames.push(''); state.revalTypes.push('s52'); state.afrRates.push(''); state.erfDates.push(''); state.lrfDates.push(''); }
+  renderCatNames();
+  renderPerCatRows();
+  autoSave();
+}
+
+function renderCatNames(){
+  const container = document.getElementById('cat-names');
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  container.innerHTML = Array.from({length:state.catCount}, (_,i) => `
+    <div class="cat-name-row">
+      <span class="cat-badge">${letters[i]}</span>
+      <input class="cat-name-input" placeholder="Category name (e.g. Main Section)" value="${esc(state.catNames[i]||'')}"
+        oninput="state.catNames[${i}]=this.value;renderPerCatRows();autoSave()">
+    </div>`).join('');
+}
+
+function catLabel(i){ return state.catNames[i] || `Category ${String.fromCharCode(65+i)}`; }
+
+function renderPerCatRows(){
+  // Revaluation grid
+  const revalTbody = document.getElementById('reval-tbody');
+  if(revalTbody){
+    revalTbody.innerHTML = Array.from({length:state.catCount}, (_,i) => {
+      const rv = state.revalTypes[i]||'s52';
+      const needsAFR = rv==='s52'||rv==='s101';
+      return `<tr>
+        <td>${esc(catLabel(i))}</td>
+        <td><select onchange="state.revalTypes[${i}]=this.value;renderPerCatRows();autoSave()">
+          ${['s52','s101','Fixed','GMP'].map(o=>`<option${rv===o?' selected':''}>${o}</option>`).join('')}
+        </select></td>
+        <td class="afr-cell"><input placeholder="${needsAFR?'e.g. 1.03':'n/a'}" value="${esc(state.afrRates[i]||'')}" ${needsAFR?'':'disabled'}
+          oninput="state.afrRates[${i}]=this.value;autoSave()"></td>
+      </tr>`;
+    }).join('');
+  }
+  // ERF grid
+  const erfTbody = document.getElementById('erf-tbody');
+  if(erfTbody){
+    erfTbody.innerHTML = Array.from({length:state.catCount}, (_,i) =>
+      `<tr><td>${esc(catLabel(i))}</td>
+       <td><input placeholder="e.g. Date member reaches NPA" value="${esc(state.erfDates[i]||'')}"
+         oninput="state.erfDates[${i}]=this.value;autoSave()"></td></tr>`).join('');
+  }
+  // LRF grid
+  const lrfTbody = document.getElementById('lrf-tbody');
+  if(lrfTbody){
+    lrfTbody.innerHTML = Array.from({length:state.catCount}, (_,i) =>
+      `<tr><td>${esc(catLabel(i))}</td>
+       <td><input placeholder="e.g. Date member reaches NPA" value="${esc(state.lrfDates[i]||'')}"
+         oninput="state.lrfDates[${i}]=this.value;autoSave()"></td></tr>`).join('');
+  }
+}
+
+// ─── STANDARD VALIDATIONS ────────────────────────────────────────────────────
+function renderStdVal(){
+  const tbody = document.getElementById('std-val-tbody');
+  tbody.innerHTML = state.stdValidations.map((v,i) => `
+    <tr>
+      <td>${esc(v.check)}</td>
+      <td><select onchange="state.stdValidations[${i}].applies=this.value;autoSave()">
+        ${['Yes','No','TBC'].map(o=>`<option${v.applies===o?' selected':''}>${o}</option>`).join('')}
+      </select></td>
+      <td><input value="${esc(v.notes)}" placeholder="Optional note..." oninput="state.stdValidations[${i}].notes=this.value;autoSave()"></td>
+    </tr>`).join('');
+}
+
+// ─── GENERATE PROFILE ────────────────────────────────────────────────────────
+const revalLabels = { s52:'s52 — statutory compound', s101:'s101 — CPI capped compound', Fixed:'Fixed — no revaluation', GMP:'GMP revaluation (see section 3)' };
+const gmpRestrictionLabels = { retirement_date:'Total GMP at Retirement Date', gmp_date:'Total GMP at GMP Date', other:'Other' };
+const gmpRevalLabels = { '6_aprils':'6 Aprils', 'complete_tax_years':'Complete Tax Years' };
+const gmpMissedLabels = { '1st_april':'1st April', 'other':'Other' };
+const gmpFutureLabels = { 'no_increase':'No increase (1.0)', '3_percent':'3%', 'other':'Other' };
+const rfBasisLabels = { 'age_attained':'Age Attained', 'term':'Term Basis' };
+
+function generate(){
+  const s = state;
+  const scheme = s.scheme || 'Unnamed Scheme';
+  const date = s.date || '—';
+  const analyst = s.analyst || '—';
+  const cats = Array.from({length:s.catCount}, (_,i)=>catLabel(i));
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+  let md = '';
+  md += `# DtoR Scheme Profile — ${scheme}\n\n`;
+  md += `**Analyst:** ${analyst}  |  **Date:** ${date}\n\n`;
+  md += `---\n\n`;
+
+  // Categories
+  md += `## 1. Benefit Categories\n\n`;
+  md += `This scheme has **${s.catCount}** benefit ${s.catCount===1?'category':'categories'}:\n\n`;
+  cats.forEach((c,i) => { md += `- **${letters[i]}** — ${c}\n`; });
+  md += `\n`;
+
+  // Revaluation
+  md += `## 2. Revaluation\n\n`;
+  md += `| Category | Revaluation Basis | AFR Rate |\n`;
+  md += `|----------|------------------|----------|\n`;
+  cats.forEach((c,i) => {
+    const rv = s.revalTypes[i]||'s52';
+    const afr = (rv==='s52'||rv==='s101') ? (s.afrRates[i]||'TBC') : 'n/a';
+    md += `| ${c} | ${revalLabels[rv]||rv} | ${afr} |\n`;
+  });
+  md += `\n`;
+
+  // GMP
+  md += `## 3. GMP\n\n`;
+  if(s.hasGMP==='yes'){
+    md += `GMP **applies** to this scheme.\n\n`;
+    md += `| Setting | Value |\n|---------|-------|\n`;
+    const restriction = s.gmpRestriction==='other' ? `Other — ${s.gmpRestrictionOther||'TBC'}` : gmpRestrictionLabels[s.gmpRestriction];
+    md += `| GMP restriction based on | ${restriction} |\n`;
+    md += `| Revaluation basis | ${gmpRevalLabels[s.gmpRevalBasis]||s.gmpRevalBasis} |\n`;
+    md += `| Missed increases from | ${gmpMissedLabels[s.gmpMissedFrom]||s.gmpMissedFrom} |\n`;
+    md += `| Increments capped at 260 weeks | ${s.gmpCapped==='yes'?'Yes':'No'} |\n`;
+    md += `| Assumed future GMP increase | ${gmpFutureLabels[s.gmpFutureInc]||s.gmpFutureInc} |\n`;
+    md += `| Alternative LRF factors for GMP elements | ${s.gmpLRF==='yes'?'Yes — coder to confirm element detail':'No'} |\n`;
+    md += `\n`;
+    if(s.gmpNotes) md += `**Notes:** ${s.gmpNotes}\n\n`;
+  } else {
+    md += `GMP **does not apply** to this scheme.\n\n`;
+  }
+
+  // Retirement Factors
+  md += `## 4. Retirement Factors\n\n`;
+  md += `**Factor period basis:** ${rfBasisLabels[s.rfBasis]||s.rfBasis}\n\n`;
+
+  md += `### Early Retirement Factors\n\n`;
+  if(s.hasERF==='yes'){
+    md += `ERFs **apply**.\n\n`;
+    md += `| Category | ERFs applied from |\n|----------|-------------------|\n`;
+    cats.forEach((c,i) => { md += `| ${c} | ${s.erfDates[i]||'TBC'} |\n`; });
+    md += `\n`;
+  } else {
+    md += `ERFs **do not apply**.\n\n`;
+  }
+
+  md += `### Late Retirement Factors\n\n`;
+  if(s.hasLRF==='yes'){
+    md += `LRFs **apply**.\n\n`;
+    md += `| Category | LRFs applied from |\n|----------|-------------------|\n`;
+    cats.forEach((c,i) => { md += `| ${c} | ${s.lrfDates[i]||'TBC'} |\n`; });
+    md += `\n`;
+  } else {
+    md += `LRFs **do not apply**.\n\n`;
+  }
+  if(s.rfNotes) md += `**Notes:** ${s.rfNotes}\n\n`;
+
+  // Commutation
+  md += `## 5. Commutation / PCLS\n\n`;
+  const cfLabel = s.cfStructure==='single' ? 'Single CF table for all categories and elements' : 'Multiple CF tables — varies by category or element';
+  const orderLabel = s.commutationOrder==='proportional' ? 'Proportional — all elements commuted equally' : 'Ordered — specific priority sequence (coder to confirm order per section 6)';
+  let spousesLabel = '';
+  if(s.spouses==='50_standard') spousesLabel='50% — standard';
+  else if(s.spouses==='none') spousesLabel='None';
+  else spousesLabel=`Other — ${s.spousesOtherValue||'TBC'}`;
+
+  md += `| Setting | Value |\n|---------|-------|\n`;
+  md += `| Commutation factors | ${cfLabel} |\n`;
+  md += `| Commutation order | ${orderLabel} |\n`;
+  md += `| Spouses pension | ${spousesLabel} |\n`;
+  md += `| DC Fund (AVC) possible | ${s.dcFund==='yes'?'Yes — assume possible':'No'} |\n`;
+  md += `| PIE applicable | ${s.pie==='yes'?'Yes':'No'} |\n`;
+  md += `\n`;
+  if(s.commutationNotes) md += `**Notes:** ${s.commutationNotes}\n\n`;
+
+  // Validations
+  md += `## 6. Validations\n\n`;
+  md += `### Standard checks\n\n`;
+  md += `| Check | Applies? | Notes |\n|-------|----------|-------|\n`;
+  s.stdValidations.forEach(v => {
+    md += `| ${v.check} | ${v.applies} | ${v.notes||'—'} |\n`;
+  });
+  md += `\n`;
+  if(s.customValidations){
+    md += `### Additional validations\n\n${s.customValidations}\n\n`;
+  }
+
+  // Notes
+  if(s.additionalNotes){
+    md += `## 7. Additional Notes\n\n${s.additionalNotes}\n\n`;
+  }
+
+  md += `---\n\n`;
+  md += `*This profile captures the business decisions for the DtoR calculation. The coder will use this to populate Aurora element keys, factor table keys, and the full technical spec.*\n`;
+
+  document.getElementById('output-md').value = md;
+  document.getElementById('output-modal').classList.add('open');
+}
+
+function copyOutput(){
+  navigator.clipboard.writeText(document.getElementById('output-md').value).then(()=>{
+    const b=event.target; b.textContent='Copied!'; setTimeout(()=>b.textContent='Copy',2000);
+  });
+}
+function downloadOutput(){
+  const md=document.getElementById('output-md').value;
+  const name=(state.scheme||'unnamed').replace(/\s+/g,'-');
+  const blob=new Blob([md],{type:'text/markdown'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download=`DtoR_Profile_${name}_${state.date||'draft'}.md`;
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+function closeOutput(){ document.getElementById('output-modal').classList.remove('open'); }
+
+// ─── SAVE / LOAD ─────────────────────────────────────────────────────────────
+function saveNow(){
+  const key='dtor-profile-'+(state.scheme||'unnamed');
+  localStorage.setItem(key, JSON.stringify({scheme:state.scheme, date:new Date().toISOString(), state:JSON.parse(JSON.stringify(state))}));
+}
+function showLoadModal(){
+  const keys=Object.keys(localStorage).filter(k=>k.startsWith('dtor-profile-'));
+  const list=document.getElementById('saved-list');
+  if(!keys.length){ list.innerHTML='<div class="empty-msg">No saved profiles found.</div>'; }
+  else{
+    list.innerHTML=keys.map(k=>{
+      const d=JSON.parse(localStorage.getItem(k));
+      return `<div class="saved-item" onclick="loadProfile('${k}')">
+        <div class="saved-scheme">${esc(d.scheme||'Unnamed')}</div>
+        <div class="saved-date">${new Date(d.date).toLocaleDateString()}</div>
+        <button class="saved-del" onclick="event.stopPropagation();deleteProfile('${k}')">✕</button>
+      </div>`;
+    }).join('');
+  }
+  document.getElementById('load-modal').classList.add('open');
+}
+function closeLoadModal(){ document.getElementById('load-modal').classList.remove('open'); }
+function deleteProfile(key){ localStorage.removeItem(key); showLoadModal(); }
+function loadProfile(key){
+  const d=JSON.parse(localStorage.getItem(key));
+  if(!d) return;
+  state=d.state;
+  closeLoadModal();
+  rebuildFromState();
+}
+
+function rebuildFromState(){
+  document.getElementById('f-scheme').value=state.scheme;
+  document.getElementById('f-analyst').value=state.analyst;
+  document.getElementById('f-date').value=state.date;
+  // Radios
+  document.querySelectorAll('input[type=radio]').forEach(r=>{
+    const map={hasGMP:'hasGMP',gmpCapped:'gmpCapped',gmpLRF:'gmpLRF',hasERF:'hasERF',hasLRF:'hasLRF',rfBasis:'rfBasis',pie:'pie',dcFund:'dcFund',gmpRestriction:'gmpRestriction',gmpRevalBasis:'gmpRevalBasis'};
+    if(map[r.name]) r.checked=r.value===state[map[r.name]];
+  });
+  // Selects
+  document.querySelector('[onchange*="cfStructure"]').value=state.cfStructure;
+  document.querySelector('[onchange*="commutationOrder"]').value=state.commutationOrder;
+  document.querySelector('[onchange*="gmpMissedFrom"]').value=state.gmpMissedFrom;
+  document.querySelector('[onchange*="gmpFutureInc"]').value=state.gmpFutureInc;
+  document.getElementById('spouses-select').value=state.spouses;
+  // Reveals
+  toggleReveal('gmp-detail', state.hasGMP==='yes');
+  toggleReveal('erf-detail', state.hasERF==='yes');
+  toggleReveal('lrf-detail', state.hasLRF==='yes');
+  toggleReveal('gmpLRFNote', state.gmpLRF==='yes');
+  toggleReveal('spousesOther', state.spouses==='other');
+  showOther('gmpRestrictionOther', state.gmpRestriction==='other');
+  // Textareas
+  document.querySelectorAll('textarea').forEach(ta=>{
+    const m=ta.getAttribute('oninput');
+    if(m){ const k=m.match(/state\.(\w+)=/); if(k&&k[1]) ta.value=state[k[1]]||''; }
+  });
+  // Cat count and grid
+  document.getElementById('cat-count').value=state.catCount;
+  renderCatNames();
+  renderPerCatRows();
+  renderStdVal();
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+document.getElementById('load-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeLoadModal();});
+document.getElementById('output-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeOutput();});
+document.body.setAttribute('data-theme', localStorage.getItem('dtor-profile-theme')||'dark');
+document.getElementById('f-date').value=state.date;
+setCatCount(1);
+renderStdVal();
+</script>
+</body>
+</html>
